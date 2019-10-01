@@ -19,8 +19,7 @@
       "length": 512
     },
     "lockout": {
-      "attempts": 5,
-      "timeout": 300
+      "timeout": 10
     }
   }
 }

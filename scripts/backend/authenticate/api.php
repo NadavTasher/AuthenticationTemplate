@@ -75,15 +75,23 @@ function authenticate_user_unload($id, $user)
 
 function authenticate_user($id, $password)
 {
+    $configuration = authenticate_configuration_load();
     $user = authenticate_user_load($id);
-    if ($user !== null) {
-        if (authenticate_hash($password, $user->security->password->salt) === $user->security->password->hashed) {
-            return [true, null];
-        } else {
-            return [false, "Wrong password"];
+    if ($configuration !== null) {
+        if ($user !== null) {
+            if ($user->security->lock->time < time()) {
+                if (authenticate_hash($password, $user->security->password->salt) === $user->security->password->hashed) {
+                    return [true, null];
+                }
+                $user->security->lock->time = time() + $configuration->security->lockout->timeout;
+                authenticate_user_unload($id, $user);
+                return [false, "Wrong password"];
+            }
+            return [false, "User is locked"];
         }
+        return [false, "Failed loading user"];
     }
-    return [false, "Failed loading user"];
+    return [false, "Failed loading configuration"];
 }
 
 function authenticate_user_add($name, $password)
@@ -95,20 +103,16 @@ function authenticate_session_add($id, $password)
 {
     $configuration = authenticate_configuration_load();
     if ($configuration !== null) {
-        $lockout = authenticate_user_free($id);
-        if ($lockout[0]) {
-            $authentication = authenticate_user($id, $password);
-            if ($authentication[0]) {
-                $session = random($configuration->security->session->length);
-                $hashed = authenticate_hash($session, $id);
-                $sessions = authenticate_sessions_load();
-                $sessions->$hashed = $id;
-                authenticate_sessions_unload($sessions);
-                return [true, $session];
-            }
-            return $authentication;
+        $authentication = authenticate_user($id, $password);
+        if ($authentication[0]) {
+            $session = random($configuration->security->session->length);
+            $hashed = authenticate_hash($session, $id);
+            $sessions = authenticate_sessions_load();
+            $sessions->$hashed = $id;
+            authenticate_sessions_unload($sessions);
+            return [true, $session];
         }
-        return $lockout;
+        return $authentication;
     }
     return [false, "Failed loading configuration"];
 }
