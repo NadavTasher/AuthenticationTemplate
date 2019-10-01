@@ -1,0 +1,20 @@
+{
+  "allowed": {
+    "session": true,
+    "signin": true,
+    "signup": true
+  },
+  "security": {
+    "password": {
+      "salt": {
+        "onion": 16,
+        "length": 512
+      },
+      "length": 8
+    },
+    "lockout": {
+      "attempts": 5,
+      "timeout": 300
+    }
+  }
+}
