@@ -23,6 +23,9 @@ const AUTHENTICATE_SESSIONS_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR 
 // Users file
 const AUTHENTICATE_USERS_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "users.json";
 
+// Local configuration
+$configuration = null;
+
 /**
  * This is the main API hook. It can be used by other APIs to handle authentication.
  */
@@ -34,14 +37,37 @@ function authenticate()
     }, true);
 }
 
-
+/**
+ * This function loads the configuration.
+ * @return bool Success
+ */
+function authenticate_configuration_load()
+{
+    // Configure scope
+    global $configuration;
+    // Check if configuration is not loaded yet
+    if ($configuration === null) {
+        $configuration = json_decode(file_get_contents(AUTHENTICATE_CONFIGURATION_FILE));
+        return true;
+    }
+    return false;
+}
 
 /**
  * This function hashes the password with it's salts.
  * @param string $password User's password
  * @param string $salt User's salt
  * @param int $onion Number of layers to hash
+ * @return string Hashed password
  */
-function authenticate_password_hash($password, $salt, $onion = null){
-
+function authenticate_password_hash($password, $salt, $onion = 0)
+{
+    // Layer 0 result
+    $return = hash("sha256", $password . $salt);
+    // Layer > 0 result
+    if ($onion !== 0) {
+        $layer = authenticate_password_hash($password, $salt, $onion - 1);
+        $return = hash("sha256", ($onion % 2 === 0 ? $layer . $salt : $salt . $layer));
+    }
+    return $return;
 }
