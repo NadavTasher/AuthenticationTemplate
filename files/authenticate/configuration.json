@@ -5,12 +5,18 @@
     "signup": true
   },
   "security": {
-    "password": {
+    "hash": {
+      "algorithm": "sha256",
+      "onion": 16,
       "salt": {
-        "onion": 16,
         "length": 512
-      },
+      }
+    },
+    "password": {
       "length": 8
+    },
+    "session": {
+      "length": 512
     },
     "lockout": {
       "attempts": 5,

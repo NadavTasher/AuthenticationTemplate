@@ -23,6 +23,9 @@ const AUTHENTICATE_SESSIONS_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR 
 // Users file
 const AUTHENTICATE_USERS_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "users.json";
 
+// Users directory
+const AUTHENTICATE_USERS_DIRECTORY = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "users";
+
 // Local configuration
 $configuration = null;
 
@@ -39,35 +42,99 @@ function authenticate()
 
 /**
  * This function loads the configuration.
- * @return bool Success
+ * @return stdClass Configuration
  */
 function authenticate_configuration_load()
 {
-    // Configure scope
-    global $configuration;
-    // Check if configuration is not loaded yet
-    if ($configuration === null) {
-        $configuration = json_decode(file_get_contents(AUTHENTICATE_CONFIGURATION_FILE));
-        return true;
+    return json_decode(file_get_contents(AUTHENTICATE_CONFIGURATION_FILE));
+}
+
+function authenticate_sessions_load()
+{
+    return json_decode(file_get_contents(AUTHENTICATE_SESSIONS_FILE));
+}
+
+function authenticate_sessions_unload($sessions)
+{
+    file_put_contents(AUTHENTICATE_SESSIONS_FILE, json_encode($sessions));
+}
+
+function authenticate_user_load($id)
+{
+    $user = AUTHENTICATE_USERS_DIRECTORY . DIRECTORY_SEPARATOR . $id . ".json";
+    if (file_exists($user)) {
+        return json_decode(file_get_contents($user));
     }
-    return false;
+    return null;
+}
+
+function authenticate_user_unload($id, $user)
+{
+
+}
+
+function authenticate_user($id, $password)
+{
+    $user = authenticate_user_load($id);
+    if ($user !== null) {
+        if (authenticate_hash($password, $user->security->password->salt) === $user->security->password->hashed) {
+            return [true, null];
+        } else {
+            return [false, "Wrong password"];
+        }
+    }
+    return [false, "Failed loading user"];
+}
+
+function authenticate_user_add($name, $password)
+{
+
+}
+
+function authenticate_session_add($id, $password)
+{
+    $configuration = authenticate_configuration_load();
+    if ($configuration !== null) {
+        $lockout = authenticate_user_unlocked($id);
+        if ($lockout[0]) {
+            $authentication = authenticate_user($id, $password);
+            if ($authentication[0]) {
+                $session = random($configuration->security->session->length);
+                $hashed = authenticate_hash($session, $id);
+                $sessions = authenticate_sessions_load();
+                $sessions->$hashed = $id;
+                authenticate_sessions_unload($sessions);
+                return [true, $session];
+            }
+            return $authentication;
+        }
+        return $lockout;
+    }
+    return [false, "Failed loading configuration"];
 }
 
 /**
- * This function hashes the password with it's salts.
- * @param string $password User's password
- * @param string $salt User's salt
+ * This function hashes a secret with a salt.
+ * @param string $secret Secret
+ * @param string $salt Salt
  * @param int $onion Number of layers to hash
- * @return string Hashed password
+ * @return string Hashed
  */
-function authenticate_password_hash($password, $salt, $onion = 0)
+function authenticate_hash($secret, $salt, $onion = null)
 {
+    // Load configuration
+    $configuration = authenticate_configuration_load();
+    // Initialize algorithm
+    $algorithm = $configuration->security->hash->algorithm;
+    // Initialize onion if null
+    if ($onion === null)
+        $onion = $configuration->security->hash->onion;
     // Layer 0 result
-    $return = hash("sha256", $password . $salt);
+    $return = hash($algorithm, $secret . $salt);
     // Layer > 0 result
-    if ($onion !== 0) {
-        $layer = authenticate_password_hash($password, $salt, $onion - 1);
-        $return = hash("sha256", ($onion % 2 === 0 ? $layer . $salt : $salt . $layer));
+    if ($onion > 0) {
+        $layer = authenticate_hash($secret, $salt, $onion - 1);
+        $return = hash($algorithm, ($onion % 2 === 0 ? $layer . $salt : $salt . $layer));
     }
     return $return;
 }
