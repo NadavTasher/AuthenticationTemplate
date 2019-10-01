@@ -5,6 +5,8 @@
       "hashed": "",
       "salt": ""
     },
-
+    "lockout":{
+      "time": 0
+    }
   }
 }

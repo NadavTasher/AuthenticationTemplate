@@ -26,9 +26,6 @@ const AUTHENTICATE_USERS_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "
 // Users directory
 const AUTHENTICATE_USERS_DIRECTORY = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "users";
 
-// Local configuration
-$configuration = null;
-
 /**
  * This is the main API hook. It can be used by other APIs to handle authentication.
  */
@@ -49,30 +46,73 @@ function authenticate_configuration_load()
     return json_decode(file_get_contents(AUTHENTICATE_CONFIGURATION_FILE));
 }
 
+/**
+ * This function loads the sessions database.
+ * @return stdClass Sessions Database
+ */
 function authenticate_sessions_load()
 {
     return json_decode(file_get_contents(AUTHENTICATE_SESSIONS_FILE));
 }
 
+/**
+ * This function saves the sessions database.
+ * @param stdClass $sessions Sessions Database
+ */
 function authenticate_sessions_unload($sessions)
 {
     file_put_contents(AUTHENTICATE_SESSIONS_FILE, json_encode($sessions));
 }
 
+/**
+ * This function loads the users database.
+ * @return stdClass Users Database
+ */
+function authenticate_users_load()
+{
+    return json_decode(file_get_contents(AUTHENTICATE_USERS_FILE));
+}
+
+/**
+ * This function saves the users database.
+ * @param stdClass $users Users Database
+ */
+function authenticate_users_unload($users)
+{
+    file_put_contents(AUTHENTICATE_USERS_FILE, json_encode($users));
+}
+
+/**
+ * This function loads a user from it's file.
+ * @param string $id User ID
+ * @return stdClass User
+ */
 function authenticate_user_load($id)
 {
-    $user = AUTHENTICATE_USERS_DIRECTORY . DIRECTORY_SEPARATOR . $id . ".json";
-    if (file_exists($user)) {
-        return json_decode(file_get_contents($user));
+    $file = AUTHENTICATE_USERS_DIRECTORY . DIRECTORY_SEPARATOR . $id . ".json";
+    if (file_exists($file)) {
+        return json_decode(file_get_contents($file));
     }
     return null;
 }
 
+/**
+ * This function saves a user to it's file.
+ * @param string $id User ID
+ * @param stdClass $user User
+ */
 function authenticate_user_unload($id, $user)
 {
-
+    $file = AUTHENTICATE_USERS_DIRECTORY . DIRECTORY_SEPARATOR . $id . ".json";
+    file_put_contents($user, json_encode($file));
 }
 
+/**
+ * This function authenticates the user and returns the result.
+ * @param string $id User ID
+ * @param string $password User Password
+ * @return array Action Result
+ */
 function authenticate_user($id, $password)
 {
     $configuration = authenticate_configuration_load();
@@ -83,7 +123,7 @@ function authenticate_user($id, $password)
                 if (authenticate_hash($password, $user->security->password->salt) === $user->security->password->hashed) {
                     return [true, null];
                 }
-                $user->security->lock->time = time() + $configuration->security->lockout->timeout;
+                $user->security->lock->time = time() + $configuration->security->lockTimeout;
                 authenticate_user_unload($id, $user);
                 return [false, "Wrong password"];
             }
@@ -94,18 +134,57 @@ function authenticate_user($id, $password)
     return [false, "Failed loading configuration"];
 }
 
+/**
+ * This function creates a new user.
+ * @param string $name User Name
+ * @param string $password User Password
+ * @return array Action Results
+ */
 function authenticate_user_add($name, $password)
 {
-
+    $configuration = authenticate_configuration_load();
+    if ($configuration !== null) {
+        // Generate a unique user id
+        $id = random($configuration->security->userIDLength);
+        while (file_exists(AUTHENTICATE_USERS_DIRECTORY . DIRECTORY_SEPARATOR . $id . ".json"))
+            $id = random($configuration->security->userIDLength);
+        // Add user to name list
+        $users = authenticate_users_load();
+        if ($users !== null) {
+            $users->$name = $id;
+            authenticate_users_unload($users);
+        } else {
+            return [false, "Failed loading users database"];
+        }
+        // Initialize the user
+        $user = new stdClass();
+        $user->name = $name;
+        $user->security = new stdClass();
+        $user->security->password = new stdClass();
+        $user->security->password->salt = random($configuration->security->hash->saltLength);
+        $user->security->password->hashed = authenticate_hash($password, $user->security->password->salt);
+        $user->security->lockout = new stdClass();
+        $user->security->lockout->time = 0;
+        // Save user
+        authenticate_user_unload($id, $user);
+        return [true, null];
+    }
+    return [false, "Failed loading configuration"];
 }
 
+/**
+ * This function authenticates the user and creates a new session.
+ * @param string $id User ID
+ * @param string $password User Password
+ * @return array Action Result
+ */
 function authenticate_session_add($id, $password)
 {
     $configuration = authenticate_configuration_load();
     if ($configuration !== null) {
         $authentication = authenticate_user($id, $password);
         if ($authentication[0]) {
-            $session = random($configuration->security->session->length);
+            $session = random($configuration->security->sessionLength);
             $hashed = authenticate_hash($session, $id);
             $sessions = authenticate_sessions_load();
             $sessions->$hashed = $id;
@@ -132,7 +211,7 @@ function authenticate_hash($secret, $salt, $onion = null)
     $algorithm = $configuration->security->hash->algorithm;
     // Initialize onion if null
     if ($onion === null)
-        $onion = $configuration->security->hash->onion;
+        $onion = $configuration->security->hash->onionLayers;
     // Layer 0 result
     $return = hash($algorithm, $secret . $salt);
     // Layer > 0 result

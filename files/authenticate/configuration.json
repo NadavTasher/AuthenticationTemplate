@@ -7,19 +7,12 @@
   "security": {
     "hash": {
       "algorithm": "sha256",
-      "onion": 16,
-      "salt": {
-        "length": 512
-      }
+      "onionLayers": 1024,
+      "saltLength": 512
     },
-    "password": {
-      "length": 8
-    },
-    "session": {
-      "length": 512
-    },
-    "lockout": {
-      "timeout": 10
-    }
+    "passwordLength": 8,
+    "sessionLength": 512,
+    "lockTimeout": 10,
+    "userIDLength": 20
   }
 }
