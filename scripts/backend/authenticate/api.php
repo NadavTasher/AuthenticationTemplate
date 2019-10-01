@@ -95,7 +95,7 @@ function authenticate_session_add($id, $password)
 {
     $configuration = authenticate_configuration_load();
     if ($configuration !== null) {
-        $lockout = authenticate_user_unlocked($id);
+        $lockout = authenticate_user_free($id);
         if ($lockout[0]) {
             $authentication = authenticate_user($id, $password);
             if ($authentication[0]) {
