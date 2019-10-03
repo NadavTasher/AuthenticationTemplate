@@ -33,31 +33,39 @@ function authenticate()
 {
     // Return the result so that other APIs could use it.
     return api(AUTHENTICATE_API, function ($action, $parameters) {
-        if ($action === "authenticate") {
-            // Authenticate the user using the session
-            if (isset($parameters->session)) {
-                return authenticate_session($parameters->session);
-            }
-            return [false, "Missing parameters"];
-        } else if ($action === "session") {
-            // Authenticate the user using the password, return the new session
-            if (isset($parameters->name) &&
-                isset($parameters->password)) {
-                $id = authenticate_find($parameters->name);
-                if ($id !== null) {
-                    return authenticate_session_add($id, $parameters->password);
+        $configuration = authenticate_configuration_load();
+        if ($configuration !== null) {
+            $hooks = $configuration->hooks;
+            if ($hooks->$action === true) {
+                if ($action === "authenticate") {
+                    // Authenticate the user using the session
+                    if (isset($parameters->session)) {
+                        return authenticate_session($parameters->session);
+                    }
+                    return [false, "Missing parameters"];
+                } else if ($action === "session") {
+                    // Authenticate the user using the password, return the new session
+                    if (isset($parameters->name) &&
+                        isset($parameters->password)) {
+                        $id = authenticate_find($parameters->name);
+                        if ($id !== null) {
+                            return authenticate_session_add($id, $parameters->password);
+                        }
+                        return [false, "User not found"];
+                    }
+                    return [false, "Missing parameters"];
+                } else if ($action === "create") {
+                    // Create a new user
+                    if (isset($parameters->name) &&
+                        isset($parameters->password)) {
+                        return authenticate_user_add($parameters->name, $parameters->password);
+                    }
+                    return [false, "Missing parameters"];
                 }
-                return [false, "User not found"];
             }
-            return [false, "Missing parameters"];
-        } else if ($action === "create") {
-            // Create a new user
-            if (isset($parameters->name) &&
-                isset($parameters->password)) {
-                return authenticate_user_add($parameters->name, $parameters->password);
-            }
-            return [false, "Missing parameters"];
+            return [false, "Locked hook"];
         }
+        return [false, "Failed to load configuration"];
     }, true);
 }
 

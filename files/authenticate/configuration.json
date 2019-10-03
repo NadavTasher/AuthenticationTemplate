@@ -1,8 +1,8 @@
 {
-  "allowed": {
+  "hooks": {
+    "authenticate": true,
     "session": true,
-    "signin": true,
-    "signup": true
+    "create": true
   },
   "security": {
     "hash": {
