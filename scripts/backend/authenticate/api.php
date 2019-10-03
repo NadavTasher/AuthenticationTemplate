@@ -108,7 +108,7 @@ function authenticate_user_unload($id, $user)
 }
 
 /**
- * This function authenticates the user and returns the result.
+ * This function authenticates the user using $id and $password, then returns the User's ID.
  * @param string $id User ID
  * @param string $password User Password
  * @return array Action Result
@@ -121,7 +121,7 @@ function authenticate_user($id, $password)
         if ($user !== null) {
             if ($user->security->lock->time < time()) {
                 if (authenticate_hash($password, $user->security->password->salt) === $user->security->password->hashed) {
-                    return [true, null];
+                    return [true, $id];
                 }
                 $user->security->lock->time = time() + $configuration->security->lockTimeout;
                 authenticate_user_unload($id, $user);
@@ -167,9 +167,28 @@ function authenticate_user_add($name, $password)
         $user->security->lockout->time = 0;
         // Save user
         authenticate_user_unload($id, $user);
-        return [true, null];
+        return [true, $id];
     }
     return [false, "Failed loading configuration"];
+}
+
+/**
+ * This function authenticates the user using $session then returns the User's ID.
+ * @param string $session Session
+ * @return array Action Result
+ */
+function authenticate_session($session)
+{
+    $sessions = authenticate_sessions_load();
+    if ($sessions !== null) {
+        foreach ($sessions as $hashed => $id) {
+            if (authenticate_hash($session, $id) === $hashed) {
+                return [true, $id];
+            }
+        }
+        return [false, "Invalid session"];
+    }
+    return [false, "Failed loading sessions"];
 }
 
 /**
