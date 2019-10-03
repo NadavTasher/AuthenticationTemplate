@@ -33,7 +33,31 @@ function authenticate()
 {
     // Return the result so that other APIs could use it.
     return api(AUTHENTICATE_API, function ($action, $parameters) {
-
+        if ($action === "authenticate") {
+            // Authenticate the user using the session
+            if (isset($parameters->session)) {
+                return authenticate_session($parameters->session);
+            }
+            return [false, "Missing parameters"];
+        } else if ($action === "session") {
+            // Authenticate the user using the password, return the new session
+            if (isset($parameters->name) &&
+                isset($parameters->password)) {
+                $id = authenticate_find($parameters->name);
+                if ($id !== null) {
+                    return authenticate_session_add($id, $parameters->password);
+                }
+                return [false, "User not found"];
+            }
+            return [false, "Missing parameters"];
+        } else if ($action === "create") {
+            // Create a new user
+            if (isset($parameters->name) &&
+                isset($parameters->password)) {
+                return authenticate_user_add($parameters->name, $parameters->password);
+            }
+            return [false, "Missing parameters"];
+        }
     }, true);
 }
 
@@ -121,7 +145,7 @@ function authenticate_user($id, $password)
         if ($user !== null) {
             if ($user->security->lock->time < time()) {
                 if (authenticate_hash($password, $user->security->password->salt) === $user->security->password->hashed) {
-                    return [true, $id];
+                    return [true, null];
                 }
                 $user->security->lock->time = time() + $configuration->security->lockTimeout;
                 authenticate_user_unload($id, $user);
@@ -167,7 +191,7 @@ function authenticate_user_add($name, $password)
         $user->security->lockout->time = 0;
         // Save user
         authenticate_user_unload($id, $user);
-        return [true, $id];
+        return [true, null];
     }
     return [false, "Failed loading configuration"];
 }
@@ -239,4 +263,20 @@ function authenticate_hash($secret, $salt, $onion = null)
         $return = hash($algorithm, ($onion % 2 === 0 ? $layer . $salt : $salt . $layer));
     }
     return $return;
+}
+
+/**
+ * This function finds the User's ID by the given $name
+ * @param string $name User's Name
+ * @return string User's ID
+ */
+function authenticate_find($name)
+{
+    $users = authenticate_users_load();
+    if ($users !== null) {
+        if (isset($users->$name))
+            return $users->$name;
+        return null;
+    }
+    return null;
 }
