@@ -139,6 +139,15 @@ function make(type, content = null, classes = []) {
     return made;
 }
 
+function page(target) {
+    let temporary = get(target);
+    while (temporary.parentNode !== document.body && temporary.parentNode !== document.body) {
+        view(temporary);
+        temporary = temporary.parentNode;
+    }
+    view(temporary);
+}
+
 function show(v) {
     get(v).style.removeProperty("display");
 }
@@ -187,25 +196,6 @@ function animate(v, property = "left", stops = ["0px", "0px"], length = 1, callb
         view.style.transitionTimingFunction = "ease";
         loop();
     }, 0);
-}
-
-function page(from, to, callback = null) {
-    let stepA = () => {
-        slide(get(from), OUT, LEFT, 0.2, stepB);
-    };
-    let stepB = () => {
-        let temporary = get(to);
-        while (temporary.parentNode !== document.body && temporary.parentNode !== document.body) {
-            view(temporary);
-            temporary = temporary.parentNode;
-        }
-        view(temporary);
-        slide(temporary, IN, RIGHT, 0.2, callback);
-    };
-    if (from === null)
-        stepB();
-    else
-        stepA();
 }
 
 function slide(v, motion = IN, direction = RIGHT, length = 0.2, callback = null) {
