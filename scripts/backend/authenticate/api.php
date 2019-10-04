@@ -42,7 +42,7 @@ function authenticate()
                     if (isset($parameters->session)) {
                         return authenticate_session($parameters->session);
                     }
-                    return [false, "Missing parameters"];
+                    return [false, "Missing parameters", null];
                 } else if ($action === "signin") {
                     // Authenticate the user using the password, return the new session
                     if (isset($parameters->name) &&
@@ -51,21 +51,21 @@ function authenticate()
                         if ($id !== null) {
                             return authenticate_session_add($id, $parameters->password);
                         }
-                        return [false, "User not found"];
+                        return [false, "User not found", null];
                     }
-                    return [false, "Missing parameters"];
+                    return [false, "Missing parameters", null];
                 } else if ($action === "signup") {
                     // Create a new user
                     if (isset($parameters->name) &&
                         isset($parameters->password)) {
                         return authenticate_user_add($parameters->name, $parameters->password);
                     }
-                    return [false, "Missing parameters"];
+                    return [false, "Missing parameters", null];
                 }
             }
-            return [false, "Locked hook"];
+            return [false, "Locked hook", null];
         }
-        return [false, "Failed to load configuration"];
+        return [false, "Failed to load configuration", null];
     }, true);
 }
 
@@ -157,17 +157,17 @@ function authenticate_user($id, $password)
         if ($user !== null) {
             if ($user->security->lock->time < time()) {
                 if (authenticate_hash($password, $user->security->password->salt) === $user->security->password->hashed) {
-                    return [true, null];
+                    return [true, null, null];
                 }
                 $user->security->lock->time = time() + $configuration->security->lockTimeout;
                 authenticate_user_unload($id, $user);
-                return [false, "Wrong password"];
+                return [false, "Wrong password", null];
             }
-            return [false, "User is locked"];
+            return [false, "User is locked", null];
         }
-        return [false, "Failed loading user"];
+        return [false, "Failed loading user", null];
     }
-    return [false, "Failed loading configuration"];
+    return [false, "Failed loading configuration", null];
 }
 
 /**
@@ -188,7 +188,7 @@ function authenticate_user_add($name, $password)
         if (authenticate_id_load($name) === null) {
             authenticate_id_unload($name, $id);
         } else {
-            return [false, "User already exists"];
+            return [false, "User already exists", null];
         }
         // Initialize the user
         $user = new stdClass();
@@ -201,9 +201,9 @@ function authenticate_user_add($name, $password)
         $user->security->lock->time = 0;
         // Save user
         authenticate_user_unload($id, $user);
-        return [true, null];
+        return [true, null, null];
     }
-    return [false, "Failed loading configuration"];
+    return [false, "Failed loading configuration", null];
 }
 
 /**
@@ -217,12 +217,12 @@ function authenticate_session($session)
     if ($sessions !== null) {
         foreach ($sessions as $hashed => $id) {
             if (authenticate_hash($session, $id) === $hashed) {
-                return [true, $id];
+                return [true, null, $id];
             }
         }
-        return [false, "Invalid session"];
+        return [false, "Invalid session", null];
     }
-    return [false, "Failed loading sessions"];
+    return [false, "Failed loading sessions", null];
 }
 
 /**
@@ -242,11 +242,11 @@ function authenticate_session_add($id, $password)
             $sessions = authenticate_sessions_load();
             $sessions->$hashed = $id;
             authenticate_sessions_unload($sessions);
-            return [true, $session];
+            return [true, $session, null];
         }
         return $authentication;
     }
-    return [false, "Failed loading configuration"];
+    return [false, "Failed loading configuration", null];
 }
 
 /**
