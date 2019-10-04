@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2019 Nadav Tasher
- * https://github.com/NadavTasher/AuthenticationTemploate/
+ * https://github.com/NadavTasher/AuthenticationTemplate/
  **/
 
 // Initialize endpoint
