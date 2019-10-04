@@ -4,13 +4,13 @@
  **/
 
 // Initialize endpoint
-const AUTHENTICATION_ENDPOINT = "scripts/backend/authenticate/authenticate.php";
+const AUTHENTICATE_ENDPOINT = "scripts/backend/authenticate/authenticate.php";
 
 // Initialize api
-const AUTHENTICATION_API = "authenticate";
+const AUTHENTICATE_API = "authenticate";
 
 // Initialize session cookie
-const AUTHENTICATION_SESSION_COOKIE = "session";
+const AUTHENTICATE_SESSION_COOKIE = "session";
 
 let last_callback = null;
 
@@ -20,10 +20,10 @@ function authentication(callback = last_callback) {
     // View the authentication panel
     view("authenticate");
     // Check authentication
-    if (authenticate_cookie_exists(AUTHENTICATION_SESSION_COOKIE)) {
+    if (authenticate_cookie_exists(AUTHENTICATE_SESSION_COOKIE)) {
         hide("authenticate-inputs");
         authenticate_output("Hold on - Authenticating...");
-        api(AUTHENTICATION_ENDPOINT, AUTHENTICATION_API, "authenticate", {}, (success, result, error) => {
+        api(AUTHENTICATE_ENDPOINT, AUTHENTICATE_API, "authenticate", {}, (success, result, error) => {
             if (success) {
                 hide("authenticate");
                 if (callback !== null) {
@@ -38,9 +38,9 @@ function authentication(callback = last_callback) {
 }
 
 function authenticate(form = body()) {
-    if (authenticate_cookie_exists(AUTHENTICATION_SESSION_COOKIE)) {
-        form = body(AUTHENTICATION_API, "authenticate", {
-            session: authenticate_cookie_pull(AUTHENTICATION_SESSION_COOKIE)
+    if (authenticate_cookie_exists(AUTHENTICATE_SESSION_COOKIE)) {
+        form = body(AUTHENTICATE_API, "authenticate", {
+            session: authenticate_cookie_pull(AUTHENTICATE_SESSION_COOKIE)
         }, form);
     }
     return form;
@@ -49,7 +49,7 @@ function authenticate(form = body()) {
 function authenticate_sign_up() {
     hide("authenticate-inputs");
     authenticate_output("Hold on - Signing you up...");
-    api(AUTHENTICATION_ENDPOINT, AUTHENTICATION_API, "signup", {
+    api(AUTHENTICATE_ENDPOINT, AUTHENTICATE_API, "signup", {
         name: get("authenticate-name").value,
         password: get("authenticate-password").value
     }, (success, result, error) => {
@@ -65,18 +65,22 @@ function authenticate_sign_up() {
 function authenticate_sign_in() {
     hide("authenticate-inputs");
     authenticate_output("Hold on - Signing you in...");
-    api(AUTHENTICATION_ENDPOINT, AUTHENTICATION_API, "signin", {
+    api(AUTHENTICATE_ENDPOINT, AUTHENTICATE_API, "signin", {
         name: get("authenticate-name").value,
         password: get("authenticate-password").value
     }, (success, result, error) => {
         if (success) {
-            authenticate_cookie_push(AUTHENTICATION_SESSION_COOKIE, result);
+            authenticate_cookie_push(AUTHENTICATE_SESSION_COOKIE, result);
             authentication();
         } else {
             show("authenticate-inputs");
             authenticate_output(error, true);
         }
     });
+}
+
+function authenticate_sign_out() {
+    authenticate_cookie_push(AUTHENTICATE_SESSION_COOKIE, undefined);
 }
 
 function authenticate_output(text, error = false) {

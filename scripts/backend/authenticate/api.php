@@ -20,8 +20,8 @@ const AUTHENTICATE_CONFIGURATION_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPAR
 // Sessions file
 const AUTHENTICATE_SESSIONS_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "sessions.json";
 
-// Users file
-const AUTHENTICATE_USERS_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "users.json";
+// IDs directory
+const AUTHENTICATE_IDS_DIRECTORY = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "ids";
 
 // Users directory
 const AUTHENTICATE_USERS_DIRECTORY = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "users";
@@ -47,7 +47,7 @@ function authenticate()
                     // Authenticate the user using the password, return the new session
                     if (isset($parameters->name) &&
                         isset($parameters->password)) {
-                        $id = authenticate_find($parameters->name);
+                        $id = authenticate_id_load($parameters->name);
                         if ($id !== null) {
                             return authenticate_session_add($id, $parameters->password);
                         }
@@ -98,20 +98,24 @@ function authenticate_sessions_unload($sessions)
 
 /**
  * This function loads the users database.
- * @return stdClass Users Database
+ * @param string $name User's Name
+ * @return string User's ID
  */
-function authenticate_users_load()
+function authenticate_id_load($name)
 {
-    return json_decode(file_get_contents(AUTHENTICATE_USERS_FILE));
+    if (file_exists(AUTHENTICATE_IDS_DIRECTORY . DIRECTORY_SEPARATOR . $name))
+        return file_get_contents(AUTHENTICATE_IDS_DIRECTORY . DIRECTORY_SEPARATOR . $name);
+    return null;
 }
 
 /**
  * This function saves the users database.
- * @param stdClass $users Users Database
+ * @param string $name User's Name
+ * @param string $id User's ID
  */
-function authenticate_users_unload($users)
+function authenticate_id_unload($name, $id)
 {
-    file_put_contents(AUTHENTICATE_USERS_FILE, json_encode($users));
+    file_put_contents(AUTHENTICATE_IDS_DIRECTORY . DIRECTORY_SEPARATOR . $name, $id);
 }
 
 /**
@@ -180,17 +184,11 @@ function authenticate_user_add($name, $password)
         $id = random($configuration->security->userIDLength);
         while (file_exists(AUTHENTICATE_USERS_DIRECTORY . DIRECTORY_SEPARATOR . $id . ".json"))
             $id = random($configuration->security->userIDLength);
-        // Add user to name list
-        $users = authenticate_users_load();
-        if ($users !== null) {
-            if (!isset($users->$name)) {
-                $users->$name = $id;
-                authenticate_users_unload($users);
-            } else {
-                return [false, "User already exists"];
-            }
+        // Add a Name-ID file
+        if (authenticate_id_load($name) === null) {
+            authenticate_id_unload($name, $id);
         } else {
-            return [false, "Failed loading users database"];
+            return [false, "User already exists"];
         }
         // Initialize the user
         $user = new stdClass();
@@ -275,20 +273,4 @@ function authenticate_hash($secret, $salt, $onion = null)
         $return = hash($algorithm, ($onion % 2 === 0 ? $layer . $salt : $salt . $layer));
     }
     return $return;
-}
-
-/**
- * This function finds the User's ID by the given $name
- * @param string $name User's Name
- * @return string User's ID
- */
-function authenticate_find($name)
-{
-    $users = authenticate_users_load();
-    if ($users !== null) {
-        if (isset($users->$name))
-            return $users->$name;
-        return null;
-    }
-    return null;
 }
