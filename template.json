@@ -1,5 +1,5 @@
 {
-  "name": "Base",
+  "name": "Authentication",
   "replacements": [
     {
       "name": "name",
