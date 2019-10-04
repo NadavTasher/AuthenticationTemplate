@@ -12,7 +12,7 @@ include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base"
 const AUTHENTICATE_API = "authenticate";
 
 // General directory
-const AUTHENTICATE_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR;
+const AUTHENTICATE_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "files" . DIRECTORY_SEPARATOR . "authenticate";
 
 // Configuration file
 const AUTHENTICATE_CONFIGURATION_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "configuration.json";
@@ -136,7 +136,7 @@ function authenticate_user_load($id)
 function authenticate_user_unload($id, $user)
 {
     $file = AUTHENTICATE_USERS_DIRECTORY . DIRECTORY_SEPARATOR . $id . ".json";
-    file_put_contents($user, json_encode($file));
+    file_put_contents($file, json_encode($user));
 }
 
 /**
@@ -183,8 +183,12 @@ function authenticate_user_add($name, $password)
         // Add user to name list
         $users = authenticate_users_load();
         if ($users !== null) {
-            $users->$name = $id;
-            authenticate_users_unload($users);
+            if (!isset($users->$name)) {
+                $users->$name = $id;
+                authenticate_users_unload($users);
+            } else {
+                return [false, "User already exists"];
+            }
         } else {
             return [false, "Failed loading users database"];
         }
@@ -195,8 +199,8 @@ function authenticate_user_add($name, $password)
         $user->security->password = new stdClass();
         $user->security->password->salt = random($configuration->security->hash->saltLength);
         $user->security->password->hashed = authenticate_hash($password, $user->security->password->salt);
-        $user->security->lockout = new stdClass();
-        $user->security->lockout->time = 0;
+        $user->security->lock = new stdClass();
+        $user->security->lock->time = 0;
         // Save user
         authenticate_user_unload($id, $user);
         return [true, null];

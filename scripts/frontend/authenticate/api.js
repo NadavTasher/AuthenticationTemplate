@@ -4,7 +4,7 @@
  **/
 
 // Initialize endpoint
-const AUTHENTICATION_ENDPOINT = "scripts/backend/authentication/authenticate.php";
+const AUTHENTICATION_ENDPOINT = "scripts/backend/authenticate/authenticate.php";
 
 // Initialize api
 const AUTHENTICATION_API = "authenticate";
@@ -80,7 +80,7 @@ function authenticate_sign_in() {
 }
 
 function authenticate_output(text, error = false) {
-    let output = get("authentication-output");
+    let output = get("authenticate-output");
     output.innerText = text;
     if (error) {
         output.style.setProperty("color", "red");
