@@ -1,8 +1,8 @@
 {
   "hooks": {
     "authenticate": true,
-    "session": true,
-    "create": true
+    "signin": true,
+    "signup": true
   },
   "security": {
     "hash": {

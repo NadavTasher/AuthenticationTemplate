@@ -2,7 +2,7 @@
 
 /**
  * Copyright (c) 2019 Nadav Tasher
- * https://github.com/NadavTasher/WebAppBase/
+ * https://github.com/NadavTasher/AuthenticationTemploate/
  **/
 
 // Include base API
@@ -12,7 +12,7 @@ include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base"
 const AUTHENTICATE_API = "authenticate";
 
 // General directory
-const AUTHENTICATE_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "files" . DIRECTORY_SEPARATOR . "authenticate";
+const AUTHENTICATE_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR;
 
 // Configuration file
 const AUTHENTICATE_CONFIGURATION_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "configuration.json";
@@ -43,7 +43,7 @@ function authenticate()
                         return authenticate_session($parameters->session);
                     }
                     return [false, "Missing parameters"];
-                } else if ($action === "session") {
+                } else if ($action === "signin") {
                     // Authenticate the user using the password, return the new session
                     if (isset($parameters->name) &&
                         isset($parameters->password)) {
@@ -54,7 +54,7 @@ function authenticate()
                         return [false, "User not found"];
                     }
                     return [false, "Missing parameters"];
-                } else if ($action === "create") {
+                } else if ($action === "signup") {
                     // Create a new user
                     if (isset($parameters->name) &&
                         isset($parameters->password)) {
