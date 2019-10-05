@@ -73,12 +73,13 @@ function instruct(title = null) {
     for (let i = 0; i < devices.length; i++) {
         if (agent.includes(devices[i])) safari = true;
     }
-    if ((safari && !(window.navigator.hasOwnProperty("standalone") && window.navigator.standalone)) || !safaricheck) {
+    if ((safari && !(window.navigator.hasOwnProperty("standalone") && window.navigator.standalone))) {
         let div = make("div");
         let text = make("p");
         let share = make("img");
         let then = make("p");
         let add = make("img");
+        row(div);
         text.innerText = "To add " + ((title === null) ? ("\"" + document.title + "\"") : title) + ", ";
         share.src = "resources/svg/icons/safari/share.svg";
         then.innerText = "then";
