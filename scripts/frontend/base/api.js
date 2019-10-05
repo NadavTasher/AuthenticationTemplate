@@ -93,7 +93,7 @@ function instruct(title = null) {
         div.appendChild(share);
         div.appendChild(then);
         div.appendChild(add);
-        popup(div, "#ffffffee", 0);
+        popup(div, 0, "#ffffffee");
     }
 }
 
