@@ -111,7 +111,7 @@ function authenticate_cookie_pull(name) {
 function authenticate_cookie_push(name, value) {
     const date = new Date();
     date.setTime(value !== undefined ? date.getTime() + (365 * 24 * 60 * 60 * 1000) : 0);
-    document.cookie = name + "=" + encodeURIComponent(value) + ";expires=" + date.toUTCString() + ";domain=" + window.location.hostname + ";path=/";
+    document.cookie = name + "=" + encodeURIComponent(value) + ";expires=" + date.toUTCString() + ";domain=" + window.location.hostname + ";";
 }
 
 function authenticate_cookie_exists(name) {
