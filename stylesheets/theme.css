@@ -56,6 +56,8 @@ textarea {
     /* Text Alignment */
     text-align: center;
     text-align-last: center;
+    /* Minimal Sizing */
+    min-height: fit-content;
 }
 
 [text = ""], [text = true], a, p {

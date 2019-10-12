@@ -73,7 +73,7 @@ function instruct(title = null) {
     for (let i = 0; i < devices.length; i++) {
         if (agent.includes(devices[i])) safari = true;
     }
-    if ((safari && !(window.navigator.hasOwnProperty("standalone") && window.navigator.standalone))) {
+    if ((safari && !("standalone" in window.navigator && window.navigator.standalone))) {
         let div = make("div");
         let text = make("p");
         let share = make("img");
