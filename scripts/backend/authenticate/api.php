@@ -265,12 +265,13 @@ function authenticate_hash($secret, $salt, $onion = null)
     // Initialize onion if null
     if ($onion === null)
         $onion = $configuration->security->hash->onionLayers;
-    // Layer 0 result
-    $return = hash($algorithm, $secret . $salt);
     // Layer > 0 result
     if ($onion > 0) {
         $layer = authenticate_hash($secret, $salt, $onion - 1);
         $return = hash($algorithm, ($onion % 2 === 0 ? $layer . $salt : $salt . $layer));
+    }else{
+        // Layer 0 result
+        $return = hash($algorithm, $secret . $salt);
     }
     return $return;
 }
