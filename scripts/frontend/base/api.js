@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2019 Nadav Tasher
- * https://github.com/NadavTasher/WebAppBase/
+ * https://github.com/NadavTasher/BaseTemplate/
  **/
 
 /* API */
