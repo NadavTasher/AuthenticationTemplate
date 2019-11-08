@@ -12,32 +12,26 @@
  * @param action The action to be executed
  * @param parameters The parameters for the action
  * @param callback The callback for the API call, contains success, result and error
- * @param form The form body to be sent along with this request (for API layering)
+ * @param APIs The API parameters for the API call (for API layering)
  */
-function api(endpoint = null, api = null, action = null, parameters = null, callback = null, form = body()) {
+function api(endpoint = null, api = null, action = null, parameters = null, callback = null, APIs = {}) {
+    let form = new FormData();
+    form.append("api", JSON.stringify(hook(api, action, parameters, APIs)));
     fetch(endpoint, {
         method: "post",
-        body: body(api, action, parameters, form)
+        body: form
     }).then(response => {
         response.text().then((result) => {
             if (callback !== null && api !== null && action !== null) {
                 let json = JSON.parse(result);
-                if (json.hasOwnProperty(api)) {
-                    if (json[api].hasOwnProperty("status") && json[api].hasOwnProperty("result")) {
-                        if (json[api]["status"].hasOwnProperty(action) && json[api]["result"].hasOwnProperty(action)) {
-                            let status = json[api]["status"][action];
-                            let result = json[api]["result"][action];
-                            if (status === true) {
-                                callback(true, result, null);
-                            } else {
-                                callback(false, null, status);
-                            }
-                        }
+                if (api in json) {
+                    if ("success" in json[api] && "result" in json[api]) {
+                        callback(json[api]["success"] === true, json[api]["result"]);
                     } else {
-                        callback(false, null, "Base API not detected in JSON");
+                        callback(false, null, "API parameters not found");
                     }
                 } else {
-                    callback(false, null, "Base API (\"" + api + "\") not found in JSON");
+                    callback(false, null, "API not found");
                 }
             }
         });
@@ -45,21 +39,23 @@ function api(endpoint = null, api = null, action = null, parameters = null, call
 }
 
 /**
- * This function compiles the API call body.
+ * This function compiles the API call hook.
  * @param api The API to associate
  * @param action The action to be executed
  * @param parameters The parameters for the action
- * @param form The form body to be sent along with this request (for API layering)
- * @returns {FormData} API call body
+ * @param APIs The API parameters for the API call (for API layering)
+ * @returns {FormData} API call hook
  */
-function body(api = null, action = null, parameters = null, form = new FormData()) {
-    if (api !== null && action !== null && parameters !== null && !form.has(api)) {
-        form.append(api, JSON.stringify({
-            action: action,
-            parameters: parameters
-        }));
+function hook(api = null, action = null, parameters = null, APIs = {}) {
+    if (!(api in APIs)) {
+        if (api !== null && action !== null && parameters !== null) {
+            APIs[api] = {
+                action: action,
+                parameters: parameters
+            };
+        }
     }
-    return form;
+    return APIs;
 }
 
 /**

@@ -23,7 +23,7 @@ function authentication(callback = last_callback) {
     if (authenticate_cookie_exists(AUTHENTICATE_SESSION_COOKIE)) {
         hide("authenticate-inputs");
         authenticate_output("Hold on - Authenticating...");
-        api(AUTHENTICATE_ENDPOINT, AUTHENTICATE_API, "authenticate", {}, (success, result, error) => {
+        api(AUTHENTICATE_ENDPOINT, AUTHENTICATE_API, "authenticate", {}, (success, result) => {
             if (success) {
                 hide("authenticate");
                 if (callback !== null) {
@@ -31,19 +31,19 @@ function authentication(callback = last_callback) {
                 }
             } else {
                 show("authenticate-inputs");
-                authenticate_output(error, true);
+                authenticate_output(result, true);
             }
         }, authenticate());
     }
 }
 
-function authenticate(form = body()) {
+function authenticate(APIs = hook()) {
     if (authenticate_cookie_exists(AUTHENTICATE_SESSION_COOKIE)) {
-        form = body(AUTHENTICATE_API, "authenticate", {
+        APIs = hook(AUTHENTICATE_API, "authenticate", {
             session: authenticate_cookie_pull(AUTHENTICATE_SESSION_COOKIE)
-        }, form);
+        }, APIs);
     }
-    return form;
+    return APIs;
 }
 
 function authenticate_sign_up() {
@@ -52,12 +52,12 @@ function authenticate_sign_up() {
     api(AUTHENTICATE_ENDPOINT, AUTHENTICATE_API, "signup", {
         name: get("authenticate-name").value,
         password: get("authenticate-password").value
-    }, (success, result, error) => {
+    }, (success, result) => {
         if (success) {
             authenticate_sign_in();
         } else {
             show("authenticate-inputs");
-            authenticate_output(error, true);
+            authenticate_output(result, true);
         }
     });
 }
@@ -68,13 +68,13 @@ function authenticate_sign_in() {
     api(AUTHENTICATE_ENDPOINT, AUTHENTICATE_API, "signin", {
         name: get("authenticate-name").value,
         password: get("authenticate-password").value
-    }, (success, result, error) => {
+    }, (success, result) => {
         if (success) {
             authenticate_cookie_push(AUTHENTICATE_SESSION_COOKIE, result);
             authentication();
         } else {
             show("authenticate-inputs");
-            authenticate_output(error, true);
+            authenticate_output(result, true);
         }
     });
 }
