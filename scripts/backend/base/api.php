@@ -30,6 +30,7 @@ function api($API, $callback, $filter = true)
                 if (is_array($action_result)) {
                     if (count($action_result) >= 2) {
                         if (is_bool($action_result[0])) {
+                            $result->$API = new stdClass();
                             $result->$API->success = $action_result[0];
                             $result->$API->result = $action_result[1];
                             if (count($action_result) >= 3) {
