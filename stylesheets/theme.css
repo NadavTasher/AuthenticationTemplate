@@ -58,6 +58,8 @@ textarea {
     text-align-last: center;
     /* Minimal Sizing */
     min-height: fit-content;
+    /* Outline */
+    outline: none;
 }
 
 [text = ""], [text = true], a, p {

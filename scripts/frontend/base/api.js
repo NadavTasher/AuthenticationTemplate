@@ -330,60 +330,6 @@ function text(v) {
 /* Interface */
 
 /**
- * This function sets the functions to be called when the user is performing gestures.
- * @param up Function to run after an Up gesture
- * @param down Function to run after a Down gesture
- * @param left Function to run after a Left gesture
- * @param right Function to run after a Right gesture
- * @param upgoing Function to run while an Up gesture is gestured
- * @param downgoing Function to run while a Down gesture is gestured
- * @param leftgoing Function to run while a Left gesture is gestured
- * @param rightgoing Function to run while a Rigjt gesture is gestured
- */
-function gestures(up = null, down = null, left = null, right = null, upgoing = null, downgoing = null, leftgoing = null, rightgoing = null) {
-    let touchX, touchY, deltaX, deltaY;
-    document.ontouchstart = (event) => {
-        touchX = event.touches[0].clientX;
-        touchY = event.touches[0].clientY;
-    };
-    document.ontouchmove = (event) => {
-        deltaX = touchX - event.touches[0].clientX;
-        deltaY = touchY - event.touches[0].clientY;
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            if (deltaX > 0) {
-                if (leftgoing !== null) leftgoing();
-            } else {
-                if (rightgoing !== null) rightgoing();
-            }
-        } else {
-            if (deltaY > 0) {
-                if (upgoing !== null) upgoing();
-            } else {
-                if (downgoing !== null) downgoing();
-            }
-        }
-
-    };
-    document.ontouchend = () => {
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            if (deltaX > 0) {
-                if (left !== null) left();
-            } else {
-                if (right !== null) right();
-            }
-        } else {
-            if (deltaY > 0) {
-                if (up !== null) up();
-            } else {
-                if (down !== null) down();
-            }
-        }
-        touchX = null;
-        touchY = null;
-    };
-}
-
-/**
  * This function pops up a popup at the bottom of the screen.
  * @param contents The content to be displayed (View / Text)
  * @param timeout The time before the popup dismisses (0 - Forever, null - Default)
@@ -456,6 +402,22 @@ function isObject(o) {
  */
 function isString(s) {
     return (typeof "" === typeof s || typeof '' === typeof s);
+}
+
+/**
+ * This function returns whether the device is a mobile phone
+ * @returns {boolean} Is mobile
+ */
+function isMobile(){
+    return window.innerHeight > window.innerWidth;
+}
+
+/**
+ * This function return whether the device is a desktop.
+ * @returns {boolean} Is desktop
+ */
+function isDesktop(){
+    return !isMobile();
 }
 
 /**
