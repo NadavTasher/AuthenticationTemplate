@@ -4,31 +4,20 @@
  **/
 
 html {
-    /* Overflow */
-    overflow-x: hidden;
-    /* Flex */
-    display: flex;
-    flex-direction: column;
-    /* Alignment */
-    justify-content: center;
-    justify-items: center;
-    align-content: center;
-    align-items: center;
     /* Positioning */
     position: fixed;
-    /* Sides */
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
     /* Sizing */
     height: 100%;
     width: 100%;
 }
 
 body {
+    /* Overflow */
+    overflow-y: auto !important;
+    /* Alignment */
+    justify-content: start !important;
     /* Sizing */
-    width: 100%;
+    max-height: 100%;
     /* Background */
     -webkit-background-size: cover;
     -moz-background-size: cover;
@@ -43,9 +32,11 @@ textarea {
     text-align-last: left !important;
 }
 
-[text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select, textarea, [row = ""], [row = true], [column = ""], [column = true], div, body {
+[text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select, textarea, [row = ""], [row = true], [column = ""], [column = true], div {
     /* WebKit */
     -webkit-appearance: none;
+    /* Overflow */
+    overflow: hidden;
     /* Display */
     display: flex;
     flex-direction: column;
@@ -90,7 +81,7 @@ textarea {
     background-color: #9999aa;
 }
 
-[row = ""], [row = true], [column = ""], [column = true], div, body {
+[row = ""], [row = true], [column = ""], [column = true], div {
     /* Alignment */
     justify-content: center;
     align-content: center;
@@ -111,4 +102,9 @@ textarea {
     flex-direction: row;
     /* Alignment */
     align-items: center;
+}
+
+[row = ""] > *, [row = true] > * {
+    /* Width */
+    width: 100%;
 }

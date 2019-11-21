@@ -18,14 +18,14 @@ function authentication(callback = last_callback) {
     // Setup last_callback
     last_callback = callback;
     // View the authentication panel
-    view("authenticate");
+    page("authenticate");
     // Check authentication
     if (authenticate_cookie_exists(AUTHENTICATE_SESSION_COOKIE)) {
         hide("authenticate-inputs");
         authenticate_output("Hold on - Authenticating...");
         api(AUTHENTICATE_ENDPOINT, AUTHENTICATE_API, "authenticate", {}, (success, result) => {
             if (success) {
-                hide("authenticate");
+                page("authenticated");
                 if (callback !== null) {
                     callback();
                 }
