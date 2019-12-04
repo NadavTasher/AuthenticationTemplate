@@ -5,14 +5,12 @@
     "signup": true
   },
   "security": {
-    "hash": {
-      "algorithm": "sha256",
-      "onionLayers": 1024,
-      "saltLength": 512
-    },
-    "passwordLength": 8,
-    "sessionLength": 512,
-    "lockTimeout": 10,
-    "userIDLength": 20
+    "algorithm": "sha256",
+    "rounds": 1024,
+    "salt": 512,
+    "session": 512,
+    "id": 20,
+    "password": 8,
+    "lock": 10
   }
 }
