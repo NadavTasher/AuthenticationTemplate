@@ -66,6 +66,7 @@ function authenticate()
                         }
                         return [false, "Missing parameters", null];
                     }
+                    return [false, "Unhandled hook", null];
                 }
                 return [false, "Locked hook", null];
             }
