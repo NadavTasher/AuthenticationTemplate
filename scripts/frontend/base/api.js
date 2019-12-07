@@ -269,7 +269,7 @@ function animate(v, property = "left", stops = ["0px", "0px"], length = 1000, ca
     next();
     interval = setInterval(loop, length);
     setTimeout(() => {
-        view.style.transitionDuration = length + "s";
+        view.style.transitionDuration = length + "ms";
         view.style.transitionTimingFunction = "ease";
         loop();
     }, 0);
@@ -342,7 +342,7 @@ function text(v) {
  * @param onclick The click action for the popup (null - Dismiss)
  * @returns {function} Dismiss callback
  */
-function popup(contents, timeout = 2000, color = null, onclick = null) {
+function popup(contents, timeout = 3000, color = null, onclick = null) {
     let div = make("div");
     column(div);
     input(div);
