@@ -66,7 +66,7 @@ textarea {
     align-content: center;
     align-items: stretch;
     /* Shaping */
-    border-radius: 1vh;
+    border-radius: 0.5vh;
     border-color: transparent;
 }
 
