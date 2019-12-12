@@ -36,12 +36,12 @@ function api(endpoint = null, api = null, action = null, parameters = null, call
                             } else {
                                 callback(false, "API not found");
                             }
-                        } catch {
+                        } catch (e) {
                         }
-                    } catch {
+                    } catch (e) {
                         try {
                             callback(false, "API result isn't JSON");
-                        } catch {
+                        } catch (e) {
                         }
                     }
                 }
