@@ -106,3 +106,7 @@ textarea {
     /* Width */
     width: 100%;
 }
+
+*::-webkit-scrollbar{
+    display: none;
+}
