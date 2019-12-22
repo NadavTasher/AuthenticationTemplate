@@ -20,6 +20,11 @@
          * https://github.com/NadavTasher/BaseTemplate/
          **/
 
+        :root {
+            --bright: #ddddee;
+            --dark: #9999aa;
+        }
+
         html {
             /* Positioning */
             position: fixed;
@@ -89,11 +94,11 @@
 
         [input = ""], [input = true], button, input, select, textarea {
             transition-duration: 0.2s;
-            background-color: #ddddee;
+            background-color: var(--bright);
         }
 
         [input = ""]:hover, [input = true]:hover, button:hover, input:hover, select:hover, textarea:hover {
-            background-color: #9999aa;
+            background-color: var(--dark);
         }
 
         [row = ""], [row = true], [column = ""], [column = true], div {
