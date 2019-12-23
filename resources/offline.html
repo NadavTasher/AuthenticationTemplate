@@ -21,9 +21,17 @@
          **/
 
         :root {
-            --bright: #ddddee;
-            --dark: #9999aa;
+            --bright: #DDDDEE;
+            --dark: #9999AA;
+            --theme: #FFFFFF;
+            --text: black;
         }
+
+        body {
+            max-width: 460px;
+        }
+
+        /* App Style */
 
         html {
             /* Positioning */
@@ -47,6 +55,7 @@
             background-size: cover;
             background-attachment: fixed;
             background-repeat: no-repeat;
+            background-color: var(--theme);
         }
 
         textarea {
@@ -61,7 +70,7 @@
             display: flex;
             flex-direction: column;
             /* Text */
-            color: black;
+            color: var(--text);
             font-size: large;
             font-family: Arial, ArialHebrew, sans-serif;
             /* Text Alignment */
@@ -132,13 +141,6 @@
         *::-webkit-scrollbar {
             display: none;
         }
-
-        body {
-            background-color: #FFFFFF;
-            max-width: 460px;
-        }
-
-        /* App Style */
 
     </style>
 </head>
