@@ -44,25 +44,36 @@ function authenticate()
                     if ($action === "authenticate") {
                         // Authenticate the user using the session
                         if (isset($parameters->session)) {
-                            return authenticate_session($parameters->session);
+                            if (is_string($parameters->session)) {
+                                return authenticate_session($parameters->session);
+                            }
+                            return [false, "Incorrect type", null];
                         }
                         return [false, "Missing parameters", null];
                     } else if ($action === "signin") {
                         // Authenticate the user using the password, return the new session
                         if (isset($parameters->name) &&
                             isset($parameters->password)) {
-                            $id = authenticate_name_load($parameters->name);
-                            if ($id !== null) {
-                                return authenticate_session_add($id, $parameters->password);
+                            if (is_string($parameters->name) &&
+                                is_string($parameters->password)) {
+                                $id = authenticate_name_load($parameters->name);
+                                if ($id !== null) {
+                                    return authenticate_session_add($id, $parameters->password);
+                                }
+                                return [false, "User not found", null];
                             }
-                            return [false, "User not found", null];
+                            return [false, "Incorrect type", null];
                         }
                         return [false, "Missing parameters", null];
                     } else if ($action === "signup") {
                         // Create a new user
                         if (isset($parameters->name) &&
                             isset($parameters->password)) {
-                            return authenticate_user_add($parameters->name, $parameters->password);
+                            if (is_string($parameters->name) &&
+                                is_string($parameters->password)) {
+                                return authenticate_user_add($parameters->name, $parameters->password);
+                            }
+                            return [false, "Incorrect type", null];
                         }
                         return [false, "Missing parameters", null];
                     }
