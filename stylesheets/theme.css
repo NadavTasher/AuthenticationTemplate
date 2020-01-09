@@ -69,6 +69,8 @@ textarea {
     /* Shaping */
     border-radius: 0.5vh;
     border-color: transparent;
+    /* Width */
+    width: auto;
 }
 
 [input = ""], [input = true], button, input, select, textarea {
