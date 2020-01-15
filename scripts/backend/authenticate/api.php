@@ -11,30 +11,43 @@ include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base"
 // API name
 const AUTHENTICATE_API = "authenticate";
 
-// Directories
+// Paths
 const AUTHENTICATE_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "files" . DIRECTORY_SEPARATOR . "authenticate";
-const AUTHENTICATE_SESSIONS_DIRECTORY = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "sessions";
-const AUTHENTICATE_NAMES_DIRECTORY = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "names";
-const AUTHENTICATE_USERS_DIRECTORY = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "users";
-
-// Hooks configuration file
 const AUTHENTICATE_HOOKS_CONFIGURATION_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "hooks.json";
+
+// Database columns
+const AUTHENTICATE_COLUMN_NAME = "name";
+const AUTHENTICATE_COLUMN_SALT = "salt";
+const AUTHENTICATE_COLUMN_HASH = "hash";
+const AUTHENTICATE_COLUMN_LOCK = "lock";
 
 // Configuration constants
 
 const AUTHENTICATE_HASHING_ALGORITHM = "sha256";
 const AUTHENTICATE_HASHING_ROUNDS = 1024;
 const AUTHENTICATE_LENGTH_SALT = 512;
-const AUTHENTICATE_LENGTH_ID_SESSION = 512;
-const AUTHENTICATE_LENGTH_ID_USER = 20;
+const AUTHENTICATE_LENGTH_SESSION = 512;
 const AUTHENTICATE_LENGTH_PASSWORD = 8;
 const AUTHENTICATE_LOCKOUT_TIMEOUT = 10;
 
 /**
- * This is the main API hook. It can be used by other APIs to handle authentication.
+ * Main API hook. Can be used by other APIs to handle authentication.
  */
 function authenticate()
 {
+    // Make sure the database is initiated.
+    // Name column
+    if (!database_has_column(AUTHENTICATE_COLUMN_NAME))
+        database_create_column(AUTHENTICATE_COLUMN_NAME);
+    // Salt column
+    if (!database_has_column(AUTHENTICATE_COLUMN_SALT))
+        database_create_column(AUTHENTICATE_COLUMN_SALT);
+    // Hash column
+    if (!database_has_column(AUTHENTICATE_COLUMN_HASH))
+        database_create_column(AUTHENTICATE_COLUMN_HASH);
+    // Lock column
+    if (!database_has_column(AUTHENTICATE_COLUMN_LOCK))
+        database_create_column(AUTHENTICATE_COLUMN_LOCK);
     // Return the result so that other APIs could use it.
     return api(AUTHENTICATE_API, function ($action, $parameters) {
         $configuration = authenticate_hooks_configuration_load();
@@ -56,9 +69,8 @@ function authenticate()
                             isset($parameters->password)) {
                             if (is_string($parameters->name) &&
                                 is_string($parameters->password)) {
-                                $id = authenticate_name_load($parameters->name);
-                                if ($id !== null) {
-                                    return authenticate_session_add($id, $parameters->password);
+                                if (count($ids = database_search(AUTHENTICATE_COLUMN_NAME, $parameters->name)) === 1) {
+                                    return authenticate_session_add($ids[0], $parameters->password);
                                 }
                                 return [false, "User not found", null];
                             }
@@ -88,7 +100,7 @@ function authenticate()
 }
 
 /**
- * This function loads the hooks configurations.
+ * Loads the hooks configurations.
  * @return stdClass Hooks Configuration
  */
 function authenticate_hooks_configuration_load()
@@ -97,98 +109,42 @@ function authenticate_hooks_configuration_load()
 }
 
 /**
- * This function loads a session by its $session id.
- * @param string $session Session ID
- * @return string User's ID
- */
-function authenticate_session_load($session)
-{
-    if (file_exists(AUTHENTICATE_SESSIONS_DIRECTORY . DIRECTORY_SEPARATOR . authenticate_hash($session)))
-        return file_get_contents(AUTHENTICATE_SESSIONS_DIRECTORY . DIRECTORY_SEPARATOR . authenticate_hash($session));
-    return null;
-}
-
-/**
- * This function saves a session by its id.
- * @param string $session Session ID
- * @param string $id User ID
- */
-function authenticate_session_unload($session, $id)
-{
-    file_put_contents(AUTHENTICATE_SESSIONS_DIRECTORY . DIRECTORY_SEPARATOR . authenticate_hash($session), $id);
-}
-
-/**
- * This function loads a User ID by its name.
- * @param string $name User Name
- * @return string User ID
- */
-function authenticate_name_load($name)
-{
-    if (file_exists(AUTHENTICATE_NAMES_DIRECTORY . DIRECTORY_SEPARATOR . authenticate_hash($name)))
-        return file_get_contents(AUTHENTICATE_NAMES_DIRECTORY . DIRECTORY_SEPARATOR . authenticate_hash($name));
-    return null;
-}
-
-/**
- * This function saves a User ID by its name.
- * @param string $name User Name
- * @param string $id User ID
- */
-function authenticate_name_unload($name, $id)
-{
-    file_put_contents(AUTHENTICATE_NAMES_DIRECTORY . DIRECTORY_SEPARATOR . authenticate_hash($name), $id);
-}
-
-/**
- * This function loads a user by its id.
- * @param string $id User ID
- * @return stdClass User
- */
-function authenticate_user_load($id)
-{
-    if (file_exists(AUTHENTICATE_USERS_DIRECTORY . DIRECTORY_SEPARATOR . $id)) {
-        return json_decode(file_get_contents(AUTHENTICATE_USERS_DIRECTORY . DIRECTORY_SEPARATOR . $id));
-    }
-    return null;
-}
-
-/**
- * This function saves a user by its id.
- * @param string $id User ID
- * @param stdClass $user User
- */
-function authenticate_user_unload($id, $user)
-{
-    file_put_contents(AUTHENTICATE_USERS_DIRECTORY . DIRECTORY_SEPARATOR . $id, json_encode($user));
-}
-
-/**
- * This function authenticates a user using $id and $password, then returns a User ID.
+ * Authenticates a user using $id and $password, then returns a User ID.
  * @param string $id User ID
  * @param string $password User Password
  * @return array Action Result
  */
 function authenticate_user($id, $password)
 {
-    $user = authenticate_user_load($id);
-    if ($user !== null) {
-        if ($user->security->lockout->time < time()) {
-            if (authenticate_hash_salted($password, $user->security->password->salt) === $user->security->password->hashed) {
+    // Check if the user's row exists
+    if (database_has_row($id)) {
+        // Retrieve the lock value
+        $lock = intval(database_get($id, AUTHENTICATE_COLUMN_LOCK));
+        // Verify that the user isn't locked
+        if ($lock < time()) {
+            // Retrieve the salt and hash
+            $salt = database_get($id, AUTHENTICATE_COLUMN_SALT);
+            $hash = database_get($id, AUTHENTICATE_COLUMN_HASH);
+            // Check password match
+            if (authenticate_hash_salted($password, $salt) === $hash) {
+                // Return a success result
                 return [true, null, null];
             } else {
-                $user->security->lockout->time = time() + AUTHENTICATE_LOCKOUT_TIMEOUT;
-                authenticate_user_unload($id, $user);
+                // Lock the user
+                database_set($id, AUTHENTICATE_COLUMN_LOCK, strval(time() + AUTHENTICATE_LOCKOUT_TIMEOUT));
+                // Return a failure result
                 return [false, "Wrong password", null];
             }
         }
+        // Fallback result
         return [false, "User is locked", null];
     }
-    return [false, "Failed loading user", null];
+    // Fallback result
+    return [false, "User doesn't exist", null];
 }
 
 /**
- * This function creates a new user.
+ * Creates a new user.
  * @param string $name User Name
  * @param string $password User Password
  * @return array Action Results
@@ -196,66 +152,70 @@ function authenticate_user($id, $password)
 function authenticate_user_add($name, $password)
 {
     // Check user name
-    if (authenticate_name_load($name) === null) {
+    if (count(database_search(AUTHENTICATE_COLUMN_NAME, $name)) === 0) {
         // Check password length
         if (strlen($password) >= AUTHENTICATE_LENGTH_PASSWORD) {
             // Generate a unique user id
-            $id = random(AUTHENTICATE_LENGTH_ID_USER);
-            while (authenticate_user_load($id) !== null)
-                $id = random(AUTHENTICATE_LENGTH_ID_USER);
-            // Initialize the user
-            $user = new stdClass();
-            $user->name = $name;
-            $user->security = new stdClass();
-            $user->security->password = new stdClass();
-            $user->security->password->salt = random(AUTHENTICATE_LENGTH_SALT);
-            $user->security->password->hashed = authenticate_hash_salted($password, $user->security->password->salt);
-            $user->security->lockout = new stdClass();
-            $user->security->lockout->time = 0;
-            // Save user
-            authenticate_name_unload($name, $id);
-            authenticate_user_unload($id, $user);
+            $id = database_create_row();
+            // Generate salt and hash
+            $salt = authenticate_random(AUTHENTICATE_LENGTH_SALT);
+            $hash = authenticate_hash_salted($password, $salt);
+            // Set user information
+            database_set($id, AUTHENTICATE_COLUMN_NAME, $name);
+            database_set($id, AUTHENTICATE_COLUMN_SALT, $salt);
+            database_set($id, AUTHENTICATE_COLUMN_HASH, $hash);
+            database_set($id, AUTHENTICATE_COLUMN_LOCK, strval("0"));
+            // Return a success result
             return [true, null, null];
-
         }
+        // Fallback result
         return [false, "Password too short", null];
     }
+    // Fallback result
     return [false, "User already exists", null];
 }
 
 /**
- * This function authenticates a user using $session then returns a User ID.
+ * Authenticates a user using $session then returns a User ID.
  * @param string $session Session
  * @return array Action Result
  */
 function authenticate_session($session)
 {
-    $id = authenticate_session_load($session);
-    if ($id !== null) {
-        return [true, null, $id];
+    // Check if a link with the session's hash value
+    if (database_has_link(authenticate_hash($session))) {
+        // Return a success result with a server result of the user's ID
+        return [true, null, database_follow_link(authenticate_hash($session))];
     }
+    // Fallback result
     return [false, "Invalid session", null];
 }
 
 /**
- * This function authenticates a user and creates a new session for that user.
+ * Authenticates a user and creates a new session for that user.
  * @param string $id User ID
  * @param string $password User Password
  * @return array Action Result
  */
 function authenticate_session_add($id, $password)
 {
+    // Authenticate the user by an ID and password
     $authentication = authenticate_user($id, $password);
+    // Check authentication result
     if ($authentication[0]) {
-        $session = random(AUTHENTICATE_LENGTH_ID_SESSION);
-        authenticate_session_unload($session, $id);
+        // Generate a new session ID
+        $session = authenticate_random(AUTHENTICATE_LENGTH_SESSION);
+        // Create a database link with the session's hash
+        database_create_link($id, authenticate_hash($session));
+        // Return a success result
         return [true, $session, null];
     }
+    // Fallback result
     return $authentication;
 }
 
 /**
- * This function hashes a secret.
+ * Hashes a secret.
  * @param string $secret Secret
  * @param int $rounds Number of rounds to hash
  * @return string Hashed
@@ -274,7 +234,7 @@ function authenticate_hash($secret, $rounds = AUTHENTICATE_HASHING_ROUNDS)
 }
 
 /**
- * This function hashes a secret with a salt.
+ * Hashes a secret with a salt.
  * @param string $secret Secret
  * @param string $salt Salt
  * @param int $rounds Number of rounds to hash
@@ -291,4 +251,17 @@ function authenticate_hash_salted($secret, $salt, $rounds = AUTHENTICATE_HASHING
         $return = hash(AUTHENTICATE_HASHING_ALGORITHM, $secret . $salt);
     }
     return $return;
+}
+
+/**
+ * Creates a random string.
+ * @param int $length String length
+ * @return string String
+ */
+function authenticate_random($length = 0)
+{
+    if ($length > 0) {
+        return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . database_id($length - 1);
+    }
+    return "";
 }
