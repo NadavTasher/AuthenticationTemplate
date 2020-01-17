@@ -256,7 +256,7 @@ class Authenticate
     private static function random($length = 0)
     {
         if ($length > 0) {
-            return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . self::$database->id($length - 1);
+            return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . self::random($length - 1);
         }
         return "";
     }
