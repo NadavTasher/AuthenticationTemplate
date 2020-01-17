@@ -12,8 +12,7 @@ include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base"
 const AUTHENTICATE_API = "authenticate";
 
 // Paths
-const AUTHENTICATE_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR;
-const AUTHENTICATE_HOOKS_CONFIGURATION_FILE = AUTHENTICATE_DIRECTORY . DIRECTORY_SEPARATOR . "hooks.json";
+const AUTHENTICATE_HOOKS_CONFIGURATION_FILE = __DIR__ . DIRECTORY_SEPARATOR . "hooks.json";
 
 // Database columns
 const AUTHENTICATE_COLUMN_NAME = "name";
@@ -36,20 +35,13 @@ const AUTHENTICATE_LOCKOUT_TIMEOUT = 10;
 function authenticate()
 {
     // Make sure the database is initiated.
-    // Name column
-    if (!database_has_column(AUTHENTICATE_COLUMN_NAME))
-        database_create_column(AUTHENTICATE_COLUMN_NAME);
-    // Salt column
-    if (!database_has_column(AUTHENTICATE_COLUMN_SALT))
-        database_create_column(AUTHENTICATE_COLUMN_SALT);
-    // Hash column
-    if (!database_has_column(AUTHENTICATE_COLUMN_HASH))
-        database_create_column(AUTHENTICATE_COLUMN_HASH);
-    // Lock column
-    if (!database_has_column(AUTHENTICATE_COLUMN_LOCK))
-        database_create_column(AUTHENTICATE_COLUMN_LOCK);
+    Database::create();
+    Database::create_column(AUTHENTICATE_COLUMN_NAME);
+    Database::create_column(AUTHENTICATE_COLUMN_SALT);
+    Database::create_column(AUTHENTICATE_COLUMN_HASH);
+    Database::create_column(AUTHENTICATE_COLUMN_LOCK);
     // Return the result so that other APIs could use it.
-    return api(AUTHENTICATE_API, function ($action, $parameters) {
+    return API::handle(AUTHENTICATE_API, function ($action, $parameters) {
         $configuration = authenticate_hooks_configuration_load();
         if ($configuration !== null) {
             if (isset($configuration->$action)) {
@@ -69,7 +61,7 @@ function authenticate()
                             isset($parameters->password)) {
                             if (is_string($parameters->name) &&
                                 is_string($parameters->password)) {
-                                if (count($ids = database_search(AUTHENTICATE_COLUMN_NAME, $parameters->name)) === 1) {
+                                if (count($ids = Database::search(AUTHENTICATE_COLUMN_NAME, $parameters->name)) === 1) {
                                     return authenticate_session_add($ids[0], $parameters->password);
                                 }
                                 return [false, "User not found", null];
@@ -117,21 +109,21 @@ function authenticate_hooks_configuration_load()
 function authenticate_user($id, $password)
 {
     // Check if the user's row exists
-    if (database_has_row($id)) {
+    if (Database::has_row($id)) {
         // Retrieve the lock value
-        $lock = intval(database_get($id, AUTHENTICATE_COLUMN_LOCK));
+        $lock = intval(Database::get($id, AUTHENTICATE_COLUMN_LOCK));
         // Verify that the user isn't locked
         if ($lock < time()) {
             // Retrieve the salt and hash
-            $salt = database_get($id, AUTHENTICATE_COLUMN_SALT);
-            $hash = database_get($id, AUTHENTICATE_COLUMN_HASH);
+            $salt = Database::get($id, AUTHENTICATE_COLUMN_SALT);
+            $hash = Database::get($id, AUTHENTICATE_COLUMN_HASH);
             // Check password match
             if (authenticate_hash_salted($password, $salt) === $hash) {
                 // Return a success result
                 return [true, null, null];
             } else {
                 // Lock the user
-                database_set($id, AUTHENTICATE_COLUMN_LOCK, strval(time() + AUTHENTICATE_LOCKOUT_TIMEOUT));
+                Database::set($id, AUTHENTICATE_COLUMN_LOCK, strval(time() + AUTHENTICATE_LOCKOUT_TIMEOUT));
                 // Return a failure result
                 return [false, "Wrong password", null];
             }
@@ -152,19 +144,19 @@ function authenticate_user($id, $password)
 function authenticate_user_add($name, $password)
 {
     // Check user name
-    if (count(database_search(AUTHENTICATE_COLUMN_NAME, $name)) === 0) {
+    if (count(Database::search(AUTHENTICATE_COLUMN_NAME, $name)) === 0) {
         // Check password length
         if (strlen($password) >= AUTHENTICATE_LENGTH_PASSWORD) {
             // Generate a unique user id
-            $id = database_create_row();
+            $id = Database::create_row();
             // Generate salt and hash
             $salt = authenticate_random(AUTHENTICATE_LENGTH_SALT);
             $hash = authenticate_hash_salted($password, $salt);
             // Set user information
-            database_set($id, AUTHENTICATE_COLUMN_NAME, $name);
-            database_set($id, AUTHENTICATE_COLUMN_SALT, $salt);
-            database_set($id, AUTHENTICATE_COLUMN_HASH, $hash);
-            database_set($id, AUTHENTICATE_COLUMN_LOCK, strval("0"));
+            Database::set($id, AUTHENTICATE_COLUMN_NAME, $name);
+            Database::set($id, AUTHENTICATE_COLUMN_SALT, $salt);
+            Database::set($id, AUTHENTICATE_COLUMN_HASH, $hash);
+            Database::set($id, AUTHENTICATE_COLUMN_LOCK, strval("0"));
             // Return a success result
             return [true, null, null];
         }
@@ -183,9 +175,9 @@ function authenticate_user_add($name, $password)
 function authenticate_session($session)
 {
     // Check if a link with the session's hash value
-    if (database_has_link(authenticate_hash($session))) {
+    if (Database::has_link(authenticate_hash($session))) {
         // Return a success result with a server result of the user's ID
-        return [true, null, database_follow_link(authenticate_hash($session))];
+        return [true, null, Database::follow_link(authenticate_hash($session))];
     }
     // Fallback result
     return [false, "Invalid session", null];
@@ -206,7 +198,7 @@ function authenticate_session_add($id, $password)
         // Generate a new session ID
         $session = authenticate_random(AUTHENTICATE_LENGTH_SESSION);
         // Create a database link with the session's hash
-        database_create_link($id, authenticate_hash($session));
+        Database::create_link($id, authenticate_hash($session));
         // Return a success result
         return [true, $session, null];
     }
@@ -261,7 +253,7 @@ function authenticate_hash_salted($secret, $salt, $rounds = AUTHENTICATE_HASHING
 function authenticate_random($length = 0)
 {
     if ($length > 0) {
-        return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . database_id($length - 1);
+        return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . Database::id($length - 1);
     }
     return "";
 }

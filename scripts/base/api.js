@@ -23,7 +23,7 @@ class API {
         // Make sure the device is online
         if (window.navigator.onLine) {
             // Perform the request
-            fetch("apis/" + api, {
+            fetch("apis/" + api + "/", {
                 method: "post",
                 body: form
             }).then(response => {

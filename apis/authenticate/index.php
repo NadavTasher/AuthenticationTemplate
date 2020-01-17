@@ -1,4 +1,5 @@
 <?php
 include_once "api.php";
+API::init();
 authenticate();
-echo json_encode($result);
+API::finish();
