@@ -5,8 +5,6 @@
  * https://github.com/NadavTasher/BaseTemplate/
  **/
 
-API::init();
-
 /**
  * Base API for handling requests.
  */

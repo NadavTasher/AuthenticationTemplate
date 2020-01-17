@@ -1,5 +1,5 @@
 <?php
 include_once "api.php";
 API::init();
-authenticate();
+Authenticate::init();
 API::finish();
