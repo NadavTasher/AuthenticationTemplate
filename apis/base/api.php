@@ -21,6 +21,14 @@ class API
     }
 
     /**
+     * Echos the result JSON.
+     */
+    public static function echo()
+    {
+        echo json_encode(self::$result);
+    }
+
+    /**
      * Handles API calls by handing them over to the callback.
      * @param string $API The API to listen to
      * @param callable $callback The callback to be called with action and parameters
@@ -64,16 +72,7 @@ class API
         }
         return null;
     }
-
-    /**
-     * Echos the result JSON.
-     */
-    public static function finish()
-    {
-        echo json_encode(self::$result);
-    }
 }
-
 
 /**
  * Base API for storing user data.
@@ -81,18 +80,18 @@ class API
 class Database
 {
     // Root directory
-    private const DATABASE_DIRECTORY = "database";
+    private const DIRECTORY = "database";
     // Subdirectories
-    private const DATABASE_ROWS_DIRECTORY = self::DATABASE_DIRECTORY . DIRECTORY_SEPARATOR . "rows";
-    private const DATABASE_COLUMNS_DIRECTORY = self::DATABASE_DIRECTORY . DIRECTORY_SEPARATOR . "columns";
-    private const DATABASE_LINKS_DIRECTORY = self::DATABASE_DIRECTORY . DIRECTORY_SEPARATOR . "links";
-    private const DATABASE_ACCESS_FILE = self::DATABASE_DIRECTORY . DIRECTORY_SEPARATOR . ".htaccess";
+    private const DIRECTORY_ROWS = self::DIRECTORY . DIRECTORY_SEPARATOR . "rows";
+    private const DIRECTORY_COLUMNS = self::DIRECTORY . DIRECTORY_SEPARATOR . "columns";
+    private const DIRECTORY_LINKS = self::DIRECTORY . DIRECTORY_SEPARATOR . "links";
+    private const ACCESS_FILE = self::DIRECTORY . DIRECTORY_SEPARATOR . ".htaccess";
     // Properties
-    private const DATABASE_ID_LENGTH = 32;
-    private const DATABASE_SEPARATOR = "\n";
+    private const LENGTH_ID = 32;
+    private const SEPARATOR = "\n";
     // Hashing properties
-    private const DATABASE_HASHING_ALGORITHM = "sha256";
-    private const DATABASE_HASHING_LAYERS = 16;
+    private const HASHING_ALGORITHM = "sha256";
+    private const HASHING_ROUNDS = 16;
 
     /**
      * Validates existence of database files and directories.
@@ -100,7 +99,7 @@ class Database
     public static function create()
     {
         // Check if database directories exists
-        foreach ([self::DATABASE_DIRECTORY, self::DATABASE_COLUMNS_DIRECTORY, self::DATABASE_LINKS_DIRECTORY, self::DATABASE_ROWS_DIRECTORY] as $directory) {
+        foreach ([self::DIRECTORY, self::DIRECTORY_COLUMNS, self::DIRECTORY_LINKS, self::DIRECTORY_ROWS] as $directory) {
             if (!file_exists($directory)) {
                 // Create the directory
                 mkdir($directory);
@@ -117,9 +116,9 @@ class Database
             }
         }
         // Make sure the .htaccess exists
-        if (!file_exists(self::DATABASE_ACCESS_FILE)) {
+        if (!file_exists(self::ACCESS_FILE)) {
             // Write contents
-            file_put_contents(self::DATABASE_ACCESS_FILE, "Deny from all");
+            file_put_contents(self::ACCESS_FILE, "Deny from all");
         }
     }
 
@@ -136,7 +135,7 @@ class Database
             return self::create_row();
         } else {
             // Create row directory
-            mkdir(self::DATABASE_ROWS_DIRECTORY . DIRECTORY_SEPARATOR . $id);
+            mkdir(self::DIRECTORY_ROWS . DIRECTORY_SEPARATOR . $id);
             return $id;
         }
     }
@@ -152,7 +151,7 @@ class Database
         // Check if the column already exists
         if (!self::has_column($name)) {
             // Create column directory
-            mkdir(self::DATABASE_COLUMNS_DIRECTORY . DIRECTORY_SEPARATOR . $hashed);
+            mkdir(self::DIRECTORY_COLUMNS . DIRECTORY_SEPARATOR . $hashed);
         }
     }
 
@@ -170,7 +169,7 @@ class Database
             // Make sure the row exists
             if (self::has_row($row)) {
                 // Generate link file
-                file_put_contents(self::DATABASE_LINKS_DIRECTORY . DIRECTORY_SEPARATOR . $hashed, $row);
+                file_put_contents(self::DIRECTORY_LINKS . DIRECTORY_SEPARATOR . $hashed, $row);
             }
         }
     }
@@ -183,7 +182,7 @@ class Database
     public static function has_row($id)
     {
         // Store path
-        $path = self::DATABASE_ROWS_DIRECTORY . DIRECTORY_SEPARATOR . $id;
+        $path = self::DIRECTORY_ROWS . DIRECTORY_SEPARATOR . $id;
         // Check if path exists and is a directory
         return file_exists($path) && is_dir($path);
     }
@@ -198,7 +197,7 @@ class Database
         // Generate hashed string
         $hashed = self::hash($name);
         // Store path
-        $path = self:: DATABASE_COLUMNS_DIRECTORY . DIRECTORY_SEPARATOR . $hashed;
+        $path = self:: DIRECTORY_COLUMNS . DIRECTORY_SEPARATOR . $hashed;
         // Check if path exists and is a directory
         return file_exists($path) && is_dir($path);
     }
@@ -213,7 +212,7 @@ class Database
         // Generate hashed string
         $hashed = self::hash($link);
         // Store path
-        $path = self::DATABASE_LINKS_DIRECTORY . DIRECTORY_SEPARATOR . $hashed;
+        $path = self::DIRECTORY_LINKS . DIRECTORY_SEPARATOR . $hashed;
         // Check if path exists and is a file
         return file_exists($path) && is_file($path);
     }
@@ -230,7 +229,7 @@ class Database
             // Generate hashed string
             $hashed = self::hash($link);
             // Store path
-            $path = self::DATABASE_LINKS_DIRECTORY . DIRECTORY_SEPARATOR . $hashed;
+            $path = self::DIRECTORY_LINKS . DIRECTORY_SEPARATOR . $hashed;
             // Read link
             return file_get_contents($path);
         }
@@ -252,7 +251,7 @@ class Database
                 // Generate hashed string
                 $hashed = self::hash($column);
                 // Store path
-                $path = self::DATABASE_ROWS_DIRECTORY . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed;
+                $path = self::DIRECTORY_ROWS . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed;
                 // Check if path exists and is a file
                 return file_exists($path) && is_file($path);
             }
@@ -277,13 +276,13 @@ class Database
             // Create hashed string
             $hashed_name = self::hash($column);
             // Store path
-            $value_path = self::DATABASE_ROWS_DIRECTORY . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed_name;
+            $value_path = self::DIRECTORY_ROWS . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed_name;
             // Create hashed string
             $hashed_value = self::hash($value);
             // Write path
             file_put_contents($value_path, $value);
             // Store new path
-            $index_path = self::DATABASE_COLUMNS_DIRECTORY . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
+            $index_path = self::DIRECTORY_COLUMNS . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
             // Create rows array
             $rows = array();
             // Make sure the index file exists
@@ -291,12 +290,12 @@ class Database
                 // Read contents
                 $contents = file_get_contents($index_path);
                 // Separate lines
-                $rows = explode(self::DATABASE_SEPARATOR, $contents);
+                $rows = explode(self::SEPARATOR, $contents);
             }
             // Insert row to rows
             array_push($rows, $row);
             // Write contents
-            file_put_contents($index_path, implode($rows, self::DATABASE_SEPARATOR));
+            file_put_contents($index_path, implode($rows, self::SEPARATOR));
         }
     }
 
@@ -314,24 +313,24 @@ class Database
                 // Create hashed string
                 $hashed_name = self::hash($column);
                 // Store path
-                $value_path = self::DATABASE_ROWS_DIRECTORY . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed_name;
+                $value_path = self::DIRECTORY_ROWS . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed_name;
                 // Get value & Hash it
                 $value = file_get_contents($value_path);
                 $hashed_value = self::hash($value);
                 // Remove path
                 unlink($value_path);
                 // Store new path
-                $index_path = self::DATABASE_COLUMNS_DIRECTORY . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
+                $index_path = self::DIRECTORY_COLUMNS . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
                 // Make sure the index file exists
                 if (file_exists($index_path) && is_file($index_path)) {
                     // Read contents
                     $contents = file_get_contents($index_path);
                     // Separate lines
-                    $rows = explode(self::DATABASE_SEPARATOR, $contents);
+                    $rows = explode(self::SEPARATOR, $contents);
                     // Remove row from rows
                     unset($rows[array_search($row, $rows)]);
                     // Write contents
-                    file_put_contents($index_path, implode($rows, self::DATABASE_SEPARATOR));
+                    file_put_contents($index_path, implode($rows, self::SEPARATOR));
                 }
             }
         }
@@ -350,7 +349,7 @@ class Database
             // Generate hashed string
             $hashed = self::hash($column);
             // Store path
-            $path = self::DATABASE_ROWS_DIRECTORY . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed;
+            $path = self::DIRECTORY_ROWS . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed;
             // Read path
             return file_get_contents($path);
         }
@@ -374,13 +373,13 @@ class Database
             // Create hashed string
             $hashed_value = self::hash($value);
             // Store new path
-            $index_path = self::DATABASE_COLUMNS_DIRECTORY . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
+            $index_path = self::DIRECTORY_COLUMNS . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
             // Make sure the index file exists
             if (file_exists($index_path) && is_file($index_path)) {
                 // Read contents
                 $contents = file_get_contents($index_path);
                 // Separate lines
-                $rows = explode(self::DATABASE_SEPARATOR, $contents);
+                $rows = explode(self::SEPARATOR, $contents);
             }
         }
         return $rows;
@@ -391,7 +390,7 @@ class Database
      * @param int $length ID length
      * @return string ID
      */
-    public static function id($length = self::DATABASE_ID_LENGTH)
+    public static function id($length = self::LENGTH_ID)
     {
         if ($length > 0) {
             return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . self::id($length - 1);
@@ -405,12 +404,12 @@ class Database
      * @param int $layers Layers
      * @return string Hash
      */
-    public static function hash($message, $layers = self::DATABASE_HASHING_LAYERS)
+    public static function hash($message, $layers = self::HASHING_ROUNDS)
     {
         if ($layers === 0) {
-            return hash(self::DATABASE_HASHING_ALGORITHM, $message);
+            return hash(self::HASHING_ALGORITHM, $message);
         } else {
-            return hash(self::DATABASE_HASHING_ALGORITHM, self::hash($message, $layers - 1));
+            return hash(self::HASHING_ALGORITHM, self::hash($message, $layers - 1));
         }
     }
 }

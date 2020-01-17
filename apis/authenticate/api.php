@@ -10,20 +10,23 @@ include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base"
 
 class Authenticate
 {
+    // API string
     private const API = "authenticate";
-
+    // Hook file path
     private const HOOKS_FILE = __DIR__ . DIRECTORY_SEPARATOR . "hooks.json";
-
+    // Column names
     private const COLUMN_NAME = "name";
     private const COLUMN_SALT = "salt";
     private const COLUMN_HASH = "hash";
     private const COLUMN_LOCK = "lock";
-
+    // Hashing properties
     private const HASHING_ALGORITHM = "sha256";
     private const HASHING_ROUNDS = 1024;
+    // Lengths
     private const LENGTH_SALT = 512;
     private const LENGTH_SESSION = 512;
     private const LENGTH_PASSWORD = 8;
+    // Lock timeout
     private const TIMEOUT_LOCK = 10;
 
     /**
