@@ -7,7 +7,6 @@
 
 // Include Base API
 include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base" . DIRECTORY_SEPARATOR . "api.php";
-include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "token" . DIRECTORY_SEPARATOR . "api.php";
 
 /**
  * Authenticate API for user authentication.
@@ -35,8 +34,9 @@ class Authenticate
     private const TIMEOUT_LOCK = 10;
     // API mode
     private const TOKENS = true;
-    // Database
-    private static $database = null;
+    // Base APIs
+    private static Database $database;
+    private static Authority $authority;
 
     /**
      * Main API hook. Can be used by other APIs to handle authentication.
@@ -45,11 +45,12 @@ class Authenticate
     {
         // Make sure the database is initiated.
         self::$database = new Database(__DIR__);
-        self::$database->create();
         self::$database->create_column(self::COLUMN_NAME);
         self::$database->create_column(self::COLUMN_SALT);
         self::$database->create_column(self::COLUMN_HASH);
         self::$database->create_column(self::COLUMN_LOCK);
+        // Make sure the authority is set-up
+        self::$authority = new Authority(__DIR__);
         // Return the result so that other APIs could use it.
         return API::handle(self::API, function ($action, $parameters) {
             $configuration = self::hooks();
@@ -194,7 +195,7 @@ class Authenticate
     private static function token($token)
     {
         // Check if the token is valid
-        $result = Token::validate(self::API, $token);
+        $result = self::$authority->validate(self::API, $token);
         if ($result[0]) {
             // Token is valid
             return [true, null, $result[1]];
@@ -215,7 +216,7 @@ class Authenticate
         $authentication = self::user($id, $password);
         // Check authentication result
         if ($authentication[0]) {
-            $token = Token::issue(self::API, $id);
+            $token = self::$authority->issue(self::API, $id);
             // Return a success result
             return [true, $token, null];
         }

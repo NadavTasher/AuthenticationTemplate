@@ -80,12 +80,12 @@ class API
 class Database
 {
     // Root directory
-    private $directory = null;
+    private string $directory;
     // Subdirectories
-    private $directory_rows = null;
-    private $directory_columns = null;
-    private $directory_links = null;
-    private $access_file = null;
+    private string $directory_rows;
+    private string $directory_columns;
+    private string $directory_links;
+    private string $access_file;
     // Const properties
     private const LENGTH_ID = 32;
     private const SEPARATOR = "\n";
@@ -104,12 +104,13 @@ class Database
         $this->directory_columns = $this->directory . DIRECTORY_SEPARATOR . "columns";
         $this->directory_links = $this->directory . DIRECTORY_SEPARATOR . "links";
         $this->access_file = $this->directory . DIRECTORY_SEPARATOR . ".htaccess";
+        $this->create();
     }
 
     /**
      * Validates existence of database files and directories.
      */
-    public function create()
+    private function create()
     {
         // Check if database directories exists
         foreach ([$this->directory, $this->directory_columns, $this->directory_links, $this->directory_rows] as $directory) {
@@ -122,7 +123,7 @@ class Database
                     // Remove the path
                     unlink($directory);
                     // Redo the whole thing
-                    self::create();
+                    $this->create();
                     // Finish
                     return;
                 }
@@ -146,7 +147,7 @@ class Database
         if ($id === null)
             $id = self::id(32);
         // Check if the row already exists
-        if (!self::has_row($id)) {
+        if (!$this->has_row($id)) {
             // Create row directory
             mkdir($this->directory_rows . DIRECTORY_SEPARATOR . $id);
         }
@@ -162,7 +163,7 @@ class Database
         // Generate hashed string
         $hashed = self::hash($name);
         // Check if the column already exists
-        if (!self::has_column($name)) {
+        if (!$this->has_column($name)) {
             // Create column directory
             mkdir($this->directory_columns . DIRECTORY_SEPARATOR . $hashed);
         }
@@ -178,9 +179,9 @@ class Database
         // Generate hashed string
         $hashed = self::hash($link);
         // Check if the link already exists
-        if (!self::has_link($link)) {
+        if (!$this->has_link($link)) {
             // Make sure the row exists
-            if (self::has_row($row)) {
+            if ($this->has_row($row)) {
                 // Generate link file
                 file_put_contents($this->directory_links . DIRECTORY_SEPARATOR . $hashed, $row);
             }
@@ -308,7 +309,7 @@ class Database
             // Insert row to rows
             array_push($rows, $row);
             // Write contents
-            file_put_contents($index_path, implode($rows, self::SEPARATOR));
+            file_put_contents($index_path, implode(self::SEPARATOR, $rows));
         }
     }
 
@@ -343,7 +344,7 @@ class Database
                     // Remove row from rows
                     unset($rows[array_search($row, $rows)]);
                     // Write contents
-                    file_put_contents($index_path, implode($rows, self::SEPARATOR));
+                    file_put_contents($index_path, implode(self::SEPARATOR, $rows));
                 }
             }
         }
@@ -424,5 +425,177 @@ class Database
         } else {
             return hash(self::HASHING_ALGORITHM, self::hash($message, $layers - 1));
         }
+    }
+}
+
+/**
+ * Base API for creating and verifying tokens.
+ */
+class Authority
+{
+    // Root directory
+    private string $directory;
+    // Subdirectories
+    private string $secret_file;
+    private string $access_file;
+    // Lengths
+    private const LENGTH_RANDOM = 32;
+    private const LENGTH_SECRET = 512;
+    // Token properties
+    private const VALIDITY = 31 * 24 * 60 * 60;
+    private const SEPARATOR = ":";
+    // Hashing properties
+    private const HASHING_ALGORITHM = "sha256";
+    private const HASHING_ROUNDS = 1024;
+
+    /**
+     * Authority constructor.
+     * @param string $path Root directory
+     */
+    public function __construct($path = __DIR__)
+    {
+        $this->directory = $path . DIRECTORY_SEPARATOR . "configuration";
+        $this->secret_file = $this->directory . DIRECTORY_SEPARATOR . "secret";
+        $this->access_file = $this->directory . DIRECTORY_SEPARATOR . ".htaccess";
+        $this->create();
+    }
+
+    /**
+     * Validates existence of configuration files and directories.
+     */
+    private function create()
+    {
+        // Make sure configuration directory exists
+        if (!file_exists($this->directory)) {
+            // Create the directory
+            mkdir($this->directory);
+        } else {
+            // Make sure it is a directory
+            if (!is_dir($this->directory)) {
+                // Remove the path
+                unlink($this->directory);
+                // Redo the whole thing
+                $this->create();
+                // Finish
+                return;
+            }
+        }
+        // Make sure a shared secret exists
+        if (!file_exists($this->secret_file)) {
+            // Create the secret file
+            file_put_contents($this->secret_file, self::random(self::LENGTH_SECRET));
+        }
+        // Make sure the .htaccess exists
+        if (!file_exists($this->access_file)) {
+            // Write contents
+            file_put_contents($this->access_file, "Deny from all");
+        }
+    }
+
+    /**
+     * Returns the shared secret.
+     * @return string Secret
+     */
+    private function secret()
+    {
+        // Read secret file
+        return file_get_contents($this->secret_file);
+    }
+
+    /**
+     * Creates a token.
+     * @param string $issuer Issuer
+     * @param string $contents Content
+     * @param float | int $validity Validity time
+     * @return string Token
+     */
+    public function issue($issuer, $contents, $validity = self::VALIDITY)
+    {
+        // Calculate expiry time
+        $time = time() + intval($validity);
+        $token_parts = [
+            self::random(self::LENGTH_RANDOM),
+            $issuer,
+            $contents,
+            strval($time)
+        ];
+        // Create token string
+        $token = implode(self::SEPARATOR, $token_parts);
+        // Calculate signature
+        $signature = self::hash($token, $this->secret());
+        // Return combined message
+        return bin2hex(implode(self::SEPARATOR, [$token, $signature]));
+    }
+
+    /**
+     * Validates a token.
+     * @param string $issuer Issuer
+     * @param string $token Token
+     * @return array Validation result
+     */
+    public function validate($issuer, $token)
+    {
+        // Separate string
+        $token_parts = explode(self::SEPARATOR, hex2bin($token));
+        // Validate content count
+        if (count($token_parts) === 5) {
+            // Store parts
+            $token_random = $token_parts[0];
+            $token_issuer = $token_parts[1];
+            $token_contents = $token_parts[2];
+            $token_time = $token_parts[3];
+            $token_signature = $token_parts[4];
+            // Regenerate token string
+            $token = implode(self::SEPARATOR, array_slice($token_parts, 0, 4));
+            // Validate signature
+            if (self::hash($token, $this->secret()) === $token_signature) {
+                // Validate issuer
+                if ($token_issuer === $issuer) {
+                    // Check against time
+                    $time = intval($token_time);
+                    if ($time > time()) {
+                        // Return token contents
+                        return [true, $token_contents];
+                    }
+                    return [false, "Token expired"];
+                }
+                return [false, "Invalid token issuer"];
+            }
+            return [false, "Invalid token signature"];
+        }
+        return [false, "Invalid token format"];
+    }
+
+    /**
+     * HMACs a message.
+     * @param string $message Message
+     * @param string $secret Shared secret
+     * @param int $rounds Number of rounds
+     * @return string HMACed
+     */
+    private static function hash($message, $secret, $rounds = self::HASHING_ROUNDS)
+    {
+        // Layer > 0 result
+        if ($rounds > 0) {
+            $layer = self::hash($message, $secret, $rounds - 1);
+            $return = hash_hmac(self::HASHING_ALGORITHM, $layer, $secret);
+        } else {
+            // Layer 0 result
+            $return = hash_hmac(self::HASHING_ALGORITHM, $message, $secret);
+        }
+        return $return;
+    }
+
+    /**
+     * Creates a random string.
+     * @param int $length String length
+     * @return string String
+     */
+    private static function random($length = 0)
+    {
+        if ($length > 0) {
+            return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . self::random($length - 1);
+        }
+        return "";
     }
 }
