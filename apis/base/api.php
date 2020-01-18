@@ -104,7 +104,6 @@ class Database
         $this->directory_columns = $this->directory . DIRECTORY_SEPARATOR . "columns";
         $this->directory_links = $this->directory . DIRECTORY_SEPARATOR . "links";
         $this->access_file = $this->directory . DIRECTORY_SEPARATOR . ".htaccess";
-        $this->create();
     }
 
     /**
