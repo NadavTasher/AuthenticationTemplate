@@ -8,6 +8,9 @@
 // Include Base API
 include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base" . DIRECTORY_SEPARATOR . "api.php";
 
+/**
+ * Authenticate API for user authentication.
+ */
 class Authenticate
 {
     // API string
