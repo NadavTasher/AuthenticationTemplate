@@ -101,7 +101,6 @@ class Token
         self::prepare();
         // Separate string
         $contents = explode(self::SEPARATOR_HASH, $token);
-//        var_dump($contents);
         // Validate content count
         if (count($contents) === 2) {
             // Validate signature
