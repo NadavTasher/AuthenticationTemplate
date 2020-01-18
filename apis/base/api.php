@@ -137,20 +137,20 @@ class Database
 
     /**
      * Creates a new database row.
+     * @param null $id ID
      * @return string Row ID
      */
-    public function create_row()
+    public function create_row($id = null)
     {
         // Generate a row ID
-        $id = self::id(32);
+        if ($id === null)
+            $id = self::id(32);
         // Check if the row already exists
-        if (self::has_row($id)) {
-            return self::create_row();
-        } else {
+        if (!self::has_row($id)) {
             // Create row directory
             mkdir($this->directory_rows . DIRECTORY_SEPARATOR . $id);
-            return $id;
         }
+        return $id;
     }
 
     /**
