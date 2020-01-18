@@ -12,8 +12,9 @@ class Authenticate
 {
     // API string
     private const API = "authenticate";
-    // Hook file path
-    private const HOOKS_FILE = __DIR__ . DIRECTORY_SEPARATOR . "hooks.json";
+    // Configuration properties
+    private const CONFIGURATION_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . "configuration";
+    private const HOOKS_FILE = self::CONFIGURATION_DIRECTORY . DIRECTORY_SEPARATOR . "hooks.json";
     // Column names
     private const COLUMN_NAME = "name";
     private const COLUMN_SALT = "salt";
@@ -211,19 +212,19 @@ class Authenticate
 
     /**
      * Hashes a secret.
-     * @param string $secret Secret
-     * @param int $rounds Number of rounds to hash
+     * @param string $message Message
+     * @param int $rounds Number of rounds
      * @return string Hashed
      */
-    private static function hash($secret, $rounds = self::HASHING_ROUNDS)
+    private static function hash($message, $rounds = self::HASHING_ROUNDS)
     {
         // Layer > 0 result
         if ($rounds > 0) {
-            $layer = self::hash($secret, $rounds - 1);
+            $layer = self::hash($message, $rounds - 1);
             $return = hash(self::HASHING_ALGORITHM, $layer);
         } else {
             // Layer 0 result
-            $return = hash(self::HASHING_ALGORITHM, $secret);
+            $return = hash(self::HASHING_ALGORITHM, $message);
         }
         return $return;
     }
