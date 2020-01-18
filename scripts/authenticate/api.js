@@ -10,7 +10,7 @@ class Authenticate {
 
     static AUTHENTICATE_API = "authenticate";
 
-    static AUTHENTICATE_SESSION_COOKIE = "session";
+    static AUTHENTICATE_TOKEN_COOKIE = "token";
 
     static last_callback = null;
 
@@ -24,11 +24,11 @@ class Authenticate {
         // View the authentication panel
         UI.page("authenticate");
         // Check authentication
-        if (Authenticate.authenticate_cookie_exists(Authenticate.AUTHENTICATE_SESSION_COOKIE)) {
+        if (Authenticate.cookie_exists(Authenticate.AUTHENTICATE_TOKEN_COOKIE)) {
             // Hide the inputs
             UI.hide("authenticate-inputs");
             // Change the output message
-            Authenticate.authenticate_output("Hold on - Authenticating...");
+            Authenticate.output("Hold on - Authenticating...");
             // Send the API call
             API.send(Authenticate.AUTHENTICATE_API, "authenticate", {}, (success, result) => {
                 if (success) {
@@ -42,7 +42,7 @@ class Authenticate {
                     // Show the inputs
                     UI.show("authenticate-inputs");
                     // Change the output message
-                    Authenticate.authenticate_output(result, true);
+                    Authenticate.output(result, true);
                 }
             }, Authenticate.authenticate());
         }
@@ -55,10 +55,10 @@ class Authenticate {
      */
     static authenticate(APIs = API.hook()) {
         // Check if the session cookie exists
-        if (Authenticate.authenticate_cookie_exists(Authenticate.AUTHENTICATE_SESSION_COOKIE)) {
+        if (Authenticate.cookie_exists(Authenticate.AUTHENTICATE_TOKEN_COOKIE)) {
             // Compile the API hook
             APIs = API.hook(Authenticate.AUTHENTICATE_API, "authenticate", {
-                session: Authenticate.authenticate_cookie_pull(Authenticate.AUTHENTICATE_SESSION_COOKIE)
+                token: Authenticate.cookie_pull(Authenticate.AUTHENTICATE_TOKEN_COOKIE)
             }, APIs);
         }
         return APIs;
@@ -67,11 +67,11 @@ class Authenticate {
     /**
      * Sends a signup API call and handles the results.
      */
-    static authenticate_sign_up() {
+    static sign_up() {
         // Hide the inputs
         UI.hide("authenticate-inputs");
         // Change the output message
-        Authenticate.authenticate_output("Hold on - Signing you up...");
+        Authenticate.output("Hold on - Signing you up...");
         // Send the API call
         API.send(Authenticate.AUTHENTICATE_API, "signup", {
             name: UI.get("authenticate-name").value,
@@ -79,12 +79,12 @@ class Authenticate {
         }, (success, result) => {
             if (success) {
                 // Call the signin function
-                Authenticate.authenticate_sign_in();
+                Authenticate.sign_in();
             } else {
                 // Show the inputs
                 UI.show("authenticate-inputs");
                 // Change the output message
-                Authenticate.authenticate_output(result, true);
+                Authenticate.output(result, true);
             }
         });
     }
@@ -92,11 +92,11 @@ class Authenticate {
     /**
      * Sends a signin API call and handles the results.
      */
-    static authenticate_sign_in() {
+    static sign_in() {
         // Hide the inputs
         UI.hide("authenticate-inputs");
         // Change the output message
-        Authenticate.authenticate_output("Hold on - Signing you in...");
+        Authenticate.output("Hold on - Signing you in...");
         // Send the API call
         API.send(Authenticate.AUTHENTICATE_API, "signin", {
             name: UI.get("authenticate-name").value,
@@ -104,14 +104,14 @@ class Authenticate {
         }, (success, result) => {
             if (success) {
                 // Push the session cookie
-                Authenticate.authenticate_cookie_push(Authenticate.AUTHENTICATE_SESSION_COOKIE, result);
+                Authenticate.cookie_push(Authenticate.AUTHENTICATE_TOKEN_COOKIE, result);
                 // Call the authentication function
                 Authenticate.authentication();
             } else {
                 // Show the inputs
                 UI.show("authenticate-inputs");
                 // Change the output message
-                Authenticate.authenticate_output(result, true);
+                Authenticate.output(result, true);
             }
         });
     }
@@ -119,9 +119,9 @@ class Authenticate {
     /**
      * Signs the user out.
      */
-    static authenticate_sign_out() {
+    static sign_out() {
         // Push 'undefined' to the session cookie
-        Authenticate.authenticate_cookie_push(Authenticate.AUTHENTICATE_SESSION_COOKIE, undefined);
+        Authenticate.cookie_push(Authenticate.AUTHENTICATE_TOKEN_COOKIE, undefined);
     }
 
     /**
@@ -129,7 +129,7 @@ class Authenticate {
      * @param text Output message
      * @param error Is the message an error?
      */
-    static authenticate_output(text, error = false) {
+    static output(text, error = false) {
         // Store the output view
         let output = UI.get("authenticate-output");
         // Set the output message
@@ -149,7 +149,7 @@ class Authenticate {
      * @param name Cookie name
      * @return {string|undefined} Cookie value
      */
-    static authenticate_cookie_pull(name) {
+    static cookie_pull(name) {
         // Create a handle
         let handle = name + "=";
         // Loop over cookies
@@ -174,7 +174,7 @@ class Authenticate {
      * @param name Cookie name
      * @param value Cookie value
      */
-    static authenticate_cookie_push(name, value) {
+    static cookie_push(name, value) {
         let date = new Date();
         if (value !== undefined) {
             // Expires in one year
@@ -192,8 +192,8 @@ class Authenticate {
      * @param name Cookie name
      * @return {boolean} Exists
      */
-    static authenticate_cookie_exists(name) {
+    static cookie_exists(name) {
         // Check if the value of the cookie is different then 'undefined'
-        return Authenticate.authenticate_cookie_pull(name) !== undefined;
+        return Authenticate.cookie_pull(name) !== undefined;
     }
 }

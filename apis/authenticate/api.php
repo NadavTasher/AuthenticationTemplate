@@ -7,6 +7,7 @@
 
 // Include Base API
 include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base" . DIRECTORY_SEPARATOR . "api.php";
+include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "token" . DIRECTORY_SEPARATOR . "api.php";
 
 /**
  * Authenticate API for user authentication.
@@ -32,6 +33,8 @@ class Authenticate
     private const LENGTH_PASSWORD = 8;
     // Lock timeout
     private const TIMEOUT_LOCK = 10;
+    // API mode
+    private const TOKENS = true;
     // Database
     private static $database = null;
 
@@ -54,10 +57,15 @@ class Authenticate
                 if (isset($configuration->$action)) {
                     if ($configuration->$action === true) {
                         if ($action === "authenticate") {
-                            // Authenticate the user using the session
-                            if (isset($parameters->session)) {
-                                if (is_string($parameters->session)) {
-                                    return self::session($parameters->session);
+                            if (isset($parameters->token)) {
+                                if (is_string($parameters->token)) {
+                                    if (self::TOKENS) {
+                                        // Authenticate the user using tokens
+                                        return self::token($parameters->token);
+                                    } else {
+                                        // Authenticate the user using sessions
+                                        return self::session($parameters->token);
+                                    }
                                 }
                                 return [false, "Incorrect type", null];
                             }
@@ -69,7 +77,11 @@ class Authenticate
                                 if (is_string($parameters->name) &&
                                     is_string($parameters->password)) {
                                     if (count($ids = self::$database->search(self::COLUMN_NAME, $parameters->name)) === 1) {
-                                        return self::session_add($ids[0], $parameters->password);
+                                        if (self::TOKENS) {
+                                            return self::token_add($ids[0], $parameters->password);
+                                        } else {
+                                            return self::session_add($ids[0], $parameters->password);
+                                        }
                                     }
                                     return [false, "User not found", null];
                                 }
@@ -111,7 +123,7 @@ class Authenticate
      * Authenticates a user using $id and $password, then returns a User ID.
      * @param string $id User ID
      * @param string $password User Password
-     * @return array Action Result
+     * @return array Result
      */
     private static function user($id, $password)
     {
@@ -146,7 +158,7 @@ class Authenticate
      * Creates a new user.
      * @param string $name User Name
      * @param string $password User Password
-     * @return array Action Results
+     * @return array Results
      */
     private static function user_add($name, $password)
     {
@@ -175,9 +187,46 @@ class Authenticate
     }
 
     /**
+     * Authenticates a user using $token then returns a User ID.
+     * @param string $token Token
+     * @return array Result
+     */
+    private static function token($token)
+    {
+        // Check if the token is valid
+        $result = Token::validate(self::API, $token);
+        if ($result[0]) {
+            // Token is valid
+            return [true, null, $result[1]];
+        }
+        // Return fallback with error
+        return [false, $result[1], null];
+    }
+
+    /**
+     * Authenticates a user and creates a new token for that user.
+     * @param string $id User ID
+     * @param string $password User password
+     * @return array Result
+     */
+    private static function token_add($id, $password)
+    {
+        // Authenticate the user by an ID and password
+        $authentication = self::user($id, $password);
+        // Check authentication result
+        if ($authentication[0]) {
+            $token = Token::issue(self::API, $id);
+            // Return a success result
+            return [true, $token, null];
+        }
+        // Fallback result
+        return $authentication;
+    }
+
+    /**
      * Authenticates a user using $session then returns a User ID.
      * @param string $session Session
-     * @return array Action Result
+     * @return array Result
      */
     private static function session($session)
     {
@@ -193,8 +242,8 @@ class Authenticate
     /**
      * Authenticates a user and creates a new session for that user.
      * @param string $id User ID
-     * @param string $password User Password
-     * @return array Action Result
+     * @param string $password User password
+     * @return array Result
      */
     private static function session_add($id, $password)
     {

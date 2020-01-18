@@ -18,8 +18,8 @@ class Token
     private const LENGTH_SECRET = 512;
     // Token properties
     private const VALIDITY_TOKEN = 31 * 24 * 60 * 60;
-    private const SEPARATOR_TIME = "@";
-    private const SEPARATOR_HASH = "=";
+    private const SEPARATOR_PARTS = "&";
+    private const SEPARATOR_HASH = "#";
     // Hashing properties
     private const HASHING_ALGORITHM = "sha256";
     private const HASHING_ROUNDS = 1024;
@@ -70,18 +70,19 @@ class Token
 
     /**
      * Creates a token.
+     * @param string $API Issuing API
      * @param string $contents Token contents
      * @param float | int $validity Token validity time
      * @return string Token
      */
-    public static function create($contents, $validity = self::VALIDITY_TOKEN)
+    public static function issue($API, $contents, $validity = self::VALIDITY_TOKEN)
     {
         // Prepare secret
         self::prepare();
         // Calculate expiry time
         $time = time() + intval($validity);
         // Create token string
-        $string = bin2hex($contents) . self::SEPARATOR_TIME . bin2hex(strval($time));
+        $string = bin2hex($API) . self::SEPARATOR_PARTS . bin2hex($contents) . self::SEPARATOR_PARTS . bin2hex(strval($time));
         // Calculate signature
         $signature = self::hash($string, self::secret());
         // Return combined message
@@ -90,34 +91,42 @@ class Token
 
     /**
      * Validates a token.
+     * @param string $API Issuing API
      * @param string $token Token
-     * @return string | null Token contents
+     * @return array Validation result
      */
-    public static function validate($token)
+    public static function validate($API, $token)
     {
         // Prepare secret
         self::prepare();
         // Separate string
         $contents = explode(self::SEPARATOR_HASH, $token);
+//        var_dump($contents);
         // Validate content count
         if (count($contents) === 2) {
             // Validate signature
             if (self::hash($contents[0], self::secret()) === $contents[1]) {
                 // Validate time
-                $parts = explode(self::SEPARATOR_TIME, $contents[0]);
+                $parts = explode(self::SEPARATOR_PARTS, $contents[0]);
                 // Validate part count
-                if (count($parts) === 2) {
-                    // Check against time
-                    $time = intval(hex2bin($parts[1]));
-                    if ($time > time()) {
-                        // Return token contents
-                        return hex2bin($parts[0]);
+                if (count($parts) === 3) {
+                    // Validate issuer
+                    if (hex2bin($parts[0]) === $API) {
+                        // Check against time
+                        $time = intval(hex2bin($parts[2]));
+                        if ($time > time()) {
+                            // Return token contents
+                            return [true, hex2bin($parts[1])];
+                        }
+                        return [false, "Token expired"];
                     }
+                    return [false, "Invalid token issuer"];
                 }
+                return [false, "Invalid token format"];
             }
+            return [false, "Invalid token signature"];
         }
-        // Return null fallback
-        return null;
+        return [false, "Invalid token format"];
     }
 
     /**
