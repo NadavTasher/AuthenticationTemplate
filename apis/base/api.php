@@ -10,7 +10,14 @@
  */
 class API
 {
-    private static $result = null;
+    // Base API name
+    public const BASE = "base";
+
+    // APIs directory
+    private const APIS_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . "..";
+
+    // API results
+    private static stdClass $result;
 
     /**
      * Creates the result JSON.
@@ -26,6 +33,16 @@ class API
     public static function echo()
     {
         echo json_encode(self::$result);
+    }
+
+    /**
+     * Returns the directory of an API.
+     * @param string $API API name
+     * @return string API directory
+     */
+    public static function directory($API)
+    {
+        return self::APIS_DIRECTORY . DIRECTORY_SEPARATOR . $API;
     }
 
     /**
@@ -95,11 +112,11 @@ class Database
 
     /**
      * Database constructor.
-     * @param string $path Root directory
+     * @param string $API API name
      */
-    public function __construct($path = __DIR__)
+    public function __construct($API = API::BASE)
     {
-        $this->directory = $path . DIRECTORY_SEPARATOR . "database";
+        $this->directory = API::directory($API) . DIRECTORY_SEPARATOR . "database";
         $this->directory_rows = $this->directory . DIRECTORY_SEPARATOR . "rows";
         $this->directory_columns = $this->directory . DIRECTORY_SEPARATOR . "columns";
         $this->directory_links = $this->directory . DIRECTORY_SEPARATOR . "links";
@@ -413,17 +430,17 @@ class Database
     }
 
     /**
-     * Creates a hash for a given message.
+     * Hashes a message.
      * @param string $message Message
-     * @param int $layers Layers
+     * @param int $rounds Number of rounds
      * @return string Hash
      */
-    private static function hash($message, $layers = self::HASHING_ROUNDS)
+    private static function hash($message, $rounds = self::HASHING_ROUNDS)
     {
-        if ($layers === 0) {
+        if ($rounds === 0) {
             return hash(self::HASHING_ALGORITHM, $message);
         } else {
-            return hash(self::HASHING_ALGORITHM, self::hash($message, $layers - 1));
+            return hash(self::HASHING_ALGORITHM, self::hash($message, $rounds - 1));
         }
     }
 }
@@ -438,6 +455,8 @@ class Authority
     // Subdirectories
     private string $secret_file;
     private string $access_file;
+    // Token issuer
+    private string $issuer;
     // Lengths
     private const LENGTH_RANDOM = 32;
     private const LENGTH_SECRET = 512;
@@ -450,13 +469,14 @@ class Authority
 
     /**
      * Authority constructor.
-     * @param string $path Root directory
+     * @param string $API API name
      */
-    public function __construct($path = __DIR__)
+    public function __construct($API = API::BASE)
     {
-        $this->directory = $path . DIRECTORY_SEPARATOR . "configuration";
+        $this->directory = API::directory($API) . DIRECTORY_SEPARATOR . "authority";
         $this->secret_file = $this->directory . DIRECTORY_SEPARATOR . "secret";
         $this->access_file = $this->directory . DIRECTORY_SEPARATOR . ".htaccess";
+        $this->issuer = $API;
         $this->create();
     }
 
@@ -509,20 +529,20 @@ class Authority
      * @param float | int $validity Validity time
      * @return string Token
      */
-    public function issue($issuer, $contents, $validity = self::VALIDITY)
+    public function issue($contents, $validity = self::VALIDITY)
     {
         // Calculate expiry time
         $time = time() + intval($validity);
         $token_parts = [
             self::random(self::LENGTH_RANDOM),
-            $issuer,
+            self::hash($this->issuer),
             $contents,
             strval($time)
         ];
         // Create token string
         $token = implode(self::SEPARATOR, $token_parts);
         // Calculate signature
-        $signature = self::hash($token, $this->secret());
+        $signature = self::sign($token, $this->secret());
         // Return combined message
         return bin2hex(implode(self::SEPARATOR, [$token, $signature]));
     }
@@ -533,7 +553,7 @@ class Authority
      * @param string $token Token
      * @return array Validation result
      */
-    public function validate($issuer, $token)
+    public function validate($token)
     {
         // Separate string
         $token_parts = explode(self::SEPARATOR, hex2bin($token));
@@ -548,9 +568,9 @@ class Authority
             // Regenerate token string
             $token = implode(self::SEPARATOR, array_slice($token_parts, 0, 4));
             // Validate signature
-            if (self::hash($token, $this->secret()) === $token_signature) {
+            if (self::sign($token, $this->secret()) === $token_signature) {
                 // Validate issuer
-                if ($token_issuer === $issuer) {
+                if ($token_issuer === self::hash($this->issuer)) {
                     // Check against time
                     $time = intval($token_time);
                     if ($time > time()) {
@@ -571,19 +591,34 @@ class Authority
      * @param string $message Message
      * @param string $secret Shared secret
      * @param int $rounds Number of rounds
-     * @return string HMACed
+     * @return string Signature
      */
-    private static function hash($message, $secret, $rounds = self::HASHING_ROUNDS)
+    private static function sign($message, $secret, $rounds = self::HASHING_ROUNDS)
     {
         // Layer > 0 result
         if ($rounds > 0) {
-            $layer = self::hash($message, $secret, $rounds - 1);
+            $layer = self::sign($message, $secret, $rounds - 1);
             $return = hash_hmac(self::HASHING_ALGORITHM, $layer, $secret);
         } else {
             // Layer 0 result
             $return = hash_hmac(self::HASHING_ALGORITHM, $message, $secret);
         }
         return $return;
+    }
+
+    /**
+     * Hashes a message.
+     * @param string $message Message
+     * @param int $rounds Number of rounds
+     * @return string Hash
+     */
+    private static function hash($message, $rounds = self::HASHING_ROUNDS)
+    {
+        if ($rounds === 0) {
+            return hash(self::HASHING_ALGORITHM, $message);
+        } else {
+            return hash(self::HASHING_ALGORITHM, self::hash($message, $rounds - 1));
+        }
     }
 
     /**

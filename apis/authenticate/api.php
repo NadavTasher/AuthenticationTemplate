@@ -44,13 +44,13 @@ class Authenticate
     public static function init()
     {
         // Make sure the database is initiated.
-        self::$database = new Database(__DIR__);
+        self::$database = new Database(self::API);
         self::$database->create_column(self::COLUMN_NAME);
         self::$database->create_column(self::COLUMN_SALT);
         self::$database->create_column(self::COLUMN_HASH);
         self::$database->create_column(self::COLUMN_LOCK);
         // Make sure the authority is set-up
-        self::$authority = new Authority(__DIR__);
+        self::$authority = new Authority(self::API);
         // Return the result so that other APIs could use it.
         return API::handle(self::API, function ($action, $parameters) {
             $configuration = self::hooks();
@@ -195,7 +195,7 @@ class Authenticate
     private static function token($token)
     {
         // Check if the token is valid
-        $result = self::$authority->validate(self::API, $token);
+        $result = self::$authority->validate($token);
         if ($result[0]) {
             // Token is valid
             return [true, null, $result[1]];
@@ -216,7 +216,7 @@ class Authenticate
         $authentication = self::user($id, $password);
         // Check authentication result
         if ($authentication[0]) {
-            $token = self::$authority->issue(self::API, $id);
+            $token = self::$authority->issue($id);
             // Return a success result
             return [true, $token, null];
         }
