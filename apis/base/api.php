@@ -524,7 +524,6 @@ class Authority
 
     /**
      * Creates a token.
-     * @param string $issuer Issuer
      * @param string $contents Content
      * @param float | int $validity Validity time
      * @return string Token
@@ -549,7 +548,6 @@ class Authority
 
     /**
      * Validates a token.
-     * @param string $issuer Issuer
      * @param string $token Token
      * @return array Validation result
      */
