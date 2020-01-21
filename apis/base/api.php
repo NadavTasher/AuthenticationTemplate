@@ -78,7 +78,7 @@ class API
                                     if (count($action_result) >= 3) {
                                         return $action_result[2];
                                     } else {
-                                        return $action_result;
+                                        return null;
                                     }
                                 }
                             }

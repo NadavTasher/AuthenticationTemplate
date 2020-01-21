@@ -68,9 +68,9 @@ class Authenticate
                                         return self::session($parameters->token);
                                     }
                                 }
-                                return [false, "Incorrect type", null];
+                                return [false, "Incorrect type"];
                             }
-                            return [false, "Missing parameters", null];
+                            return [false, "Missing parameters"];
                         } else if ($action === "signin") {
                             // Authenticate the user using the password, return the new session
                             if (isset($parameters->name) &&
@@ -84,11 +84,11 @@ class Authenticate
                                             return self::session_add($ids[0], $parameters->password);
                                         }
                                     }
-                                    return [false, "User not found", null];
+                                    return [false, "User not found"];
                                 }
-                                return [false, "Incorrect type", null];
+                                return [false, "Incorrect type"];
                             }
-                            return [false, "Missing parameters", null];
+                            return [false, "Missing parameters"];
                         } else if ($action === "signup") {
                             // Create a new user
                             if (isset($parameters->name) &&
@@ -97,17 +97,17 @@ class Authenticate
                                     is_string($parameters->password)) {
                                     return self::user_add($parameters->name, $parameters->password);
                                 }
-                                return [false, "Incorrect type", null];
+                                return [false, "Incorrect type"];
                             }
-                            return [false, "Missing parameters", null];
+                            return [false, "Missing parameters"];
                         }
-                        return [false, "Unhandled hook", null];
+                        return [false, "Unhandled hook"];
                     }
-                    return [false, "Locked hook", null];
+                    return [false, "Locked hook"];
                 }
-                return [false, "Undefined hook", null];
+                return [false, "Undefined hook"];
             }
-            return [false, "Failed to load configuration", null];
+            return [false, "Failed to load configuration"];
         }, true);
     }
 
@@ -140,19 +140,19 @@ class Authenticate
                 // Check password match
                 if (self::hash_salted($password, $salt) === $hash) {
                     // Return a success result
-                    return [true, null, null];
+                    return [true, null];
                 } else {
                     // Lock the user
                     self::$database->set($id, self::COLUMN_LOCK, strval(time() + self::TIMEOUT_LOCK));
                     // Return a failure result
-                    return [false, "Wrong password", null];
+                    return [false, "Wrong password"];
                 }
             }
             // Fallback result
-            return [false, "User is locked", null];
+            return [false, "User is locked"];
         }
         // Fallback result
-        return [false, "User doesn't exist", null];
+        return [false, "User doesn't exist"];
     }
 
     /**
@@ -178,13 +178,13 @@ class Authenticate
                 self::$database->set($id, self::COLUMN_HASH, $hash);
                 self::$database->set($id, self::COLUMN_LOCK, strval("0"));
                 // Return a success result
-                return [true, null, null];
+                return [true, null];
             }
             // Fallback result
-            return [false, "Password too short", null];
+            return [false, "Password too short"];
         }
         // Fallback result
-        return [false, "User already exists", null];
+        return [false, "User already exists"];
     }
 
     /**
@@ -201,7 +201,7 @@ class Authenticate
             return [true, null, $result[1]];
         }
         // Return fallback with error
-        return [false, $result[1], null];
+        return [false, $result[1]];
     }
 
     /**
@@ -218,7 +218,7 @@ class Authenticate
         if ($authentication[0]) {
             $token = self::$authority->issue($id);
             // Return a success result
-            return [true, $token, null];
+            return [true, $token];
         }
         // Fallback result
         return $authentication;
@@ -237,7 +237,7 @@ class Authenticate
             return [true, null, self::$database->follow_link(self::hash($session))];
         }
         // Fallback result
-        return [false, "Invalid session", null];
+        return [false, "Invalid session"];
     }
 
     /**
@@ -257,7 +257,7 @@ class Authenticate
             // Create a database link with the session's hash
             self::$database->create_link($id, self::hash($session));
             // Return a success result
-            return [true, $session, null];
+            return [true, $session];
         }
         // Fallback result
         return $authentication;
