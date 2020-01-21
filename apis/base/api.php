@@ -535,7 +535,7 @@ class Authority
         $token_parts = [
             self::random(self::LENGTH_RANDOM),
             self::hash($this->issuer),
-            $contents,
+            bin2hex($contents),
             strval($time)
         ];
         // Create token string
@@ -573,7 +573,7 @@ class Authority
                     $time = intval($token_time);
                     if ($time > time()) {
                         // Return token contents
-                        return [true, $token_contents];
+                        return [true, hex2bin($token_contents)];
                     }
                     return [false, "Token expired"];
                 }
