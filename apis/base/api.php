@@ -536,7 +536,7 @@ class Authority
             self::random(self::LENGTH_RANDOM),
             self::hash($this->issuer),
             bin2hex($contents),
-            strval($time)
+            bin2hex($time)
         ];
         // Create token string
         $token = implode(self::SEPARATOR, $token_parts);
@@ -570,7 +570,8 @@ class Authority
                 // Validate issuer
                 if ($token_issuer === self::hash($this->issuer)) {
                     // Check against time
-                    $time = intval($token_time);
+                    $time = hex2bin($token_time);
+                    // String to int comparison is allowed
                     if ($time > time()) {
                         // Return token contents
                         return [true, hex2bin($token_contents)];
