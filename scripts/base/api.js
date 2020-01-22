@@ -11,10 +11,10 @@ class API {
     /**
      * Sends an API call.
      * @param endpoint API to call
-     * @param action API action
-     * @param parameters API action parameters
-     * @param callback API result callback
-     * @param APIs API list for API layering
+     * @param action Action
+     * @param parameters Parameters
+     * @param callback Callback
+     * @param APIs API list
      */
     static send(endpoint = null, action = null, parameters = null, callback = null, APIs = {}) {
         API.call(endpoint, API.hook(endpoint, action, parameters, callback, APIs));
@@ -82,14 +82,14 @@ class API {
 
     /**
      * Compiles an API call hook.
-     * @param endpoint The API to associate
-     * @param action The action to be executed
-     * @param parameters The parameters for the action
-     * @param callback The callback for the hook
-     * @param APIs The API parameters for the API call (for API layering)
-     * @returns {FormData} API call hook
+     * @param api API name
+     * @param action Action
+     * @param parameters Parameters
+     * @param callback Callback
+     * @param APIs API list
+     * @returns API list
      */
-    static hook(endpoint = null, action = null, parameters = null, callback = null, APIs = {}) {
+    static hook(api = null, action = null, parameters = null, callback = null, APIs = {}) {
         // Make sure the APIs list is well structured
         if (!APIs.hasOwnProperty("apis")) {
             APIs["apis"] = {};
@@ -98,16 +98,16 @@ class API {
             APIs["callbacks"] = {};
         }
         // Make sure the API isn't already compiled in the API list
-        if (!(APIs["apis"].hasOwnProperty(endpoint) || APIs["callbacks"].hasOwnProperty(endpoint))) {
+        if (!(APIs["apis"].hasOwnProperty(api) || APIs["callbacks"].hasOwnProperty(api))) {
             // Make sure none are null
-            if (endpoint !== null && action !== null && parameters !== null) {
+            if (api !== null && action !== null && parameters !== null) {
                 // Compile API
-                APIs["apis"][endpoint] = {
+                APIs["apis"][api] = {
                     action: action,
                     parameters: parameters
                 };
                 // Compile callback
-                APIs["callbacks"][endpoint] = callback;
+                APIs["callbacks"][api] = callback;
             }
         }
         // Return updated API list
