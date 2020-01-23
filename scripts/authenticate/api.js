@@ -7,30 +7,21 @@
  * Authenticate API for user authentication.
  */
 class Authenticate {
-
-    static API = "authenticate";
-
-    static TOKEN_COOKIE = "token";
-
-    static last_callback = null;
-
     /**
      * Authenticates the user by requiring signup, signin and session validation.
      * @param callback Post authentication callback
      */
-    static authentication(callback = Authenticate.last_callback) {
-        // Setup last_callback
-        Authenticate.last_callback = callback;
+    static authentication(callback = null) {
         // View the authentication panel
         UI.page("authenticate");
         // Check authentication
-        if (Authenticate.cookie_exists(Authenticate.TOKEN_COOKIE)) {
+        if (Authenticate.cookie_exists("token")) {
             // Hide the inputs
             UI.hide("authenticate-inputs");
             // Change the output message
             Authenticate.output("Hold on - Authenticating...");
             // Send the API call
-            API.call(Authenticate.API, Authenticate.authenticate((success, result) => {
+            API.call("authenticate", Authenticate.authenticate((success, result) => {
                 if (success) {
                     // Change the page
                     UI.page("authenticated");
@@ -56,10 +47,10 @@ class Authenticate {
      */
     static authenticate(callback = null, APIs = API.hook()) {
         // Check if the session cookie exists
-        if (Authenticate.cookie_exists(Authenticate.TOKEN_COOKIE)) {
+        if (Authenticate.cookie_exists("token")) {
             // Compile the API hook
-            APIs = API.hook(Authenticate.API, "authenticate", {
-                token: Authenticate.cookie_pull(Authenticate.TOKEN_COOKIE)
+            APIs = API.hook("authenticate", "authenticate", {
+                token: Authenticate.cookie_pull("token")
             }, callback, APIs);
         }
         return APIs;
@@ -74,7 +65,7 @@ class Authenticate {
         // Change the output message
         Authenticate.output("Hold on - Signing you up...");
         // Send the API call
-        API.send(Authenticate.API, "signup", {
+        API.send("authenticate", "signup", {
             name: UI.get("authenticate-name").value,
             password: UI.get("authenticate-password").value
         }, (success, result) => {
@@ -99,13 +90,13 @@ class Authenticate {
         // Change the output message
         Authenticate.output("Hold on - Signing you in...");
         // Send the API call
-        API.send(Authenticate.API, "signin", {
+        API.send("authenticate", "signin", {
             name: UI.get("authenticate-name").value,
             password: UI.get("authenticate-password").value
         }, (success, result) => {
             if (success) {
                 // Push the session cookie
-                Authenticate.cookie_push(Authenticate.TOKEN_COOKIE, result);
+                Authenticate.cookie_push("token", result);
                 // Call the authentication function
                 Authenticate.authentication();
             } else {
@@ -122,7 +113,7 @@ class Authenticate {
      */
     static sign_out() {
         // Push 'undefined' to the session cookie
-        Authenticate.cookie_push(Authenticate.TOKEN_COOKIE, undefined);
+        Authenticate.cookie_push("token", undefined);
     }
 
     /**
