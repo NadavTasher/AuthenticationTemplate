@@ -59,7 +59,7 @@ class Authenticate {
     /**
      * Sends a signup API call and handles the results.
      */
-    static sign_up() {
+    static sign_up(callback = null) {
         // Hide the inputs
         UI.hide("authenticate-inputs");
         // Change the output message
@@ -71,7 +71,7 @@ class Authenticate {
         }, (success, result) => {
             if (success) {
                 // Call the signin function
-                Authenticate.sign_in();
+                Authenticate.sign_in(callback);
             } else {
                 // Show the inputs
                 UI.show("authenticate-inputs");
@@ -84,7 +84,7 @@ class Authenticate {
     /**
      * Sends a signin API call and handles the results.
      */
-    static sign_in() {
+    static sign_in(callback = null) {
         // Hide the inputs
         UI.hide("authenticate-inputs");
         // Change the output message
@@ -98,7 +98,7 @@ class Authenticate {
                 // Push the session cookie
                 Authenticate.cookie_push("token", result);
                 // Call the authentication function
-                Authenticate.authentication();
+                Authenticate.authentication(callback);
             } else {
                 // Show the inputs
                 UI.show("authenticate-inputs");
