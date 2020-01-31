@@ -77,14 +77,18 @@ class Authenticate
                                 isset($parameters->password)) {
                                 if (is_string($parameters->name) &&
                                     is_string($parameters->password)) {
-                                    if (count($ids = self::$database->search(self::COLUMN_NAME, $parameters->name)) === 1) {
-                                        if (self::TOKENS) {
-                                            return self::token_add($ids[0], $parameters->password);
-                                        } else {
-                                            return self::session_add($ids[0], $parameters->password);
+                                    $search = self::$database->search(self::COLUMN_NAME, $parameters->name);
+                                    if ($search[0]) {
+                                        if (count($ids = $search[1]) === 1) {
+                                            if (self::TOKENS) {
+                                                return self::token_add($ids[0], $parameters->password);
+                                            } else {
+                                                return self::session_add($ids[0], $parameters->password);
+                                            }
                                         }
+                                        return [false, "User not found"];
                                     }
-                                    return [false, "User not found"];
+                                    return $search;
                                 }
                                 return [false, "Incorrect type"];
                             }
@@ -129,27 +133,35 @@ class Authenticate
     private static function user($id, $password)
     {
         // Check if the user's row exists
-        if (self::$database->has_row($id)) {
+        if (self::$database->has_row($id)[0]) {
             // Retrieve the lock value
-            $lock = intval(self::$database->get($id, self::COLUMN_LOCK));
-            // Verify that the user isn't locked
-            if ($lock < time()) {
-                // Retrieve the salt and hash
-                $salt = self::$database->get($id, self::COLUMN_SALT);
-                $hash = self::$database->get($id, self::COLUMN_HASH);
-                // Check password match
-                if (self::hash_salted($password, $salt) === $hash) {
-                    // Return a success result
-                    return [true, null];
-                } else {
-                    // Lock the user
-                    self::$database->set($id, self::COLUMN_LOCK, strval(time() + self::TIMEOUT_LOCK));
-                    // Return a failure result
-                    return [false, "Wrong password"];
+            $lock = self::$database->get($id, self::COLUMN_LOCK);
+            if ($lock[0]) {
+                // Verify that the user isn't locked
+                if (intval($lock[1]) < time()) {
+                    // Retrieve the salt and hash
+                    $salt = self::$database->get($id, self::COLUMN_SALT);
+                    $hash = self::$database->get($id, self::COLUMN_HASH);
+                    if ($salt[0] && $hash[0]) {
+                        // Check password match
+                        if (self::hash_salted($password, $salt[1]) === $hash[1]) {
+                            // Return a success result
+                            return [true, null];
+                        } else {
+                            // Lock the user
+                            self::$database->set($id, self::COLUMN_LOCK, strval(time() + self::TIMEOUT_LOCK));
+                            // Return a failure result
+                            return [false, "Wrong password"];
+                        }
+                    }
+                    // Fallback result
+                    return [false, "Internal error"];
                 }
+                // Fallback result
+                return [false, "User is locked"];
             }
             // Fallback result
-            return [false, "User is locked"];
+            return [false, "Internal error"];
         }
         // Fallback result
         return [false, "User doesn't exist"];
@@ -164,27 +176,36 @@ class Authenticate
     private static function user_add($name, $password)
     {
         // Check user name
-        if (count(self::$database->search(self::COLUMN_NAME, $name)) === 0) {
-            // Check password length
-            if (strlen($password) >= self::LENGTH_PASSWORD) {
-                // Generate a unique user id
-                $id = self::$database->create_row();
-                // Generate salt and hash
-                $salt = self::random(self::LENGTH_SALT);
-                $hash = self::hash_salted($password, $salt);
-                // Set user information
-                self::$database->set($id, self::COLUMN_NAME, $name);
-                self::$database->set($id, self::COLUMN_SALT, $salt);
-                self::$database->set($id, self::COLUMN_HASH, $hash);
-                self::$database->set($id, self::COLUMN_LOCK, strval("0"));
-                // Return a success result
-                return [true, null];
+        $search = self::$database->search(self::COLUMN_NAME, $name);
+        if ($search[0]) {
+            if (count($search[1]) === 0) {
+                // Check password length
+                if (strlen($password) >= self::LENGTH_PASSWORD) {
+                    // Generate a unique user id
+                    $id = self::$database->create_row();
+                    if ($id[0]) {
+                        // Generate salt and hash
+                        $salt = self::random(self::LENGTH_SALT);
+                        $hash = self::hash_salted($password, $salt);
+                        // Set user information
+                        self::$database->set($id[1], self::COLUMN_NAME, $name);
+                        self::$database->set($id[1], self::COLUMN_SALT, $salt);
+                        self::$database->set($id[1], self::COLUMN_HASH, $hash);
+                        self::$database->set($id[1], self::COLUMN_LOCK, strval("0"));
+                        // Return a success result
+                        return [true, null];
+                    }
+                    // Fallback result
+                    return $id;
+                }
+                // Fallback result
+                return [false, "Password too short"];
             }
             // Fallback result
-            return [false, "Password too short"];
+            return [false, "User already exists"];
         }
         // Fallback result
-        return [false, "User already exists"];
+        return $search;
     }
 
     /**
@@ -201,7 +222,7 @@ class Authenticate
             return [true, null, $result[1]];
         }
         // Return fallback with error
-        return [false, $result[1]];
+        return $result;
     }
 
     /**
@@ -216,9 +237,8 @@ class Authenticate
         $authentication = self::user($id, $password);
         // Check authentication result
         if ($authentication[0]) {
-            $token = self::$authority->issue($id);
             // Return a success result
-            return [true, $token];
+            return self::$authority->issue($id);
         }
         // Fallback result
         return $authentication;
@@ -232,9 +252,10 @@ class Authenticate
     private static function session($session)
     {
         // Check if a link with the session's hash value
-        if (self::$database->has_link(self::hash($session))) {
+        $has_link = self::$database->has_link(self::hash($session));
+        if ($has_link[0]) {
             // Return a success result with a server result of the user's ID
-            return [true, null, self::$database->follow_link(self::hash($session))];
+            return [true, null, $has_link[1]];
         }
         // Fallback result
         return [false, "Invalid session"];
@@ -255,9 +276,12 @@ class Authenticate
             // Generate a new session ID
             $session = self::random(self::LENGTH_SESSION);
             // Create a database link with the session's hash
-            self::$database->create_link($id, self::hash($session));
-            // Return a success result
-            return [true, $session];
+            $create_link = self::$database->create_link($id, self::hash($session));
+            if ($create_link[0]) {
+                return [true, $session];
+            }
+            // Fallback result
+            return $create_link;
         }
         // Fallback result
         return $authentication;
