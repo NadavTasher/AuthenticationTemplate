@@ -54,13 +54,24 @@ class API
      */
     public static function handle($API, $callback, $filter = true)
     {
+        // Initialize the request
+        $request = null;
+        // Load the request from POST or GET
         if (isset($_POST["api"])) {
             $request = $_POST["api"];
+        } else if (isset($_GET["api"])) {
+            $request = $_GET["api"];
+        }
+        // Make sure the request is initialized
+        if ($request !== null) {
+            // Filter the request
             if ($filter) {
                 $request = str_replace("<", "", $request);
                 $request = str_replace(">", "", $request);
             }
+            // Decode the request
             $APIs = json_decode($request);
+            // Parse the APIs
             if (isset($APIs->$API)) {
                 if (isset($APIs->$API->action) &&
                     isset($APIs->$API->parameters)) {
@@ -87,6 +98,7 @@ class API
                 }
             }
         }
+        // Fallback result
         return null;
     }
 }
@@ -490,7 +502,6 @@ class Authority
     // Token issuer
     private string $issuer;
     // Lengths
-    private const LENGTH_RANDOM = 32;
     private const LENGTH_SECRET = 512;
     // Token properties
     private const VALIDITY = 31 * 24 * 60 * 60;
@@ -554,45 +565,51 @@ class Authority
         if (file_exists($this->secret_file) && is_file($this->secret_file)) {
             return [true, file_get_contents($this->secret_file)];
         }
+        // Fallback error
         return [false, "Secret doesn't exist"];
     }
 
     /**
      * Creates a token.
-     * @param string $contents Content
+     * @param string | stdClass | array $contents Content
+     * @param array $permissions Permissions
      * @param float | int $validity Validity time
      * @return array Result
      */
-    public function issue($contents, $validity = self::VALIDITY)
+    public function issue($contents, $permissions = [], $validity = self::VALIDITY)
     {
         // Load secret
         $secret = $this->secret();
         // Make sure secret exists
         if ($secret[0]) {
-            // Calculate expiry time
-            $time = time() + intval($validity);
-            $token_parts = [
-                self::random(self::LENGTH_RANDOM),
-                self::hash($this->issuer),
-                bin2hex($contents),
-                bin2hex($time)
-            ];
+            // Create token object
+            $token_object = new stdClass();
+            $token_object->contents = $contents;
+            $token_object->permissions = $permissions;
+            $token_object->issuer = self::hash($this->issuer);
+            $token_object->expiry = time() + intval($validity);
             // Create token string
-            $token = implode(self::SEPARATOR, $token_parts);
+            $token_object_string = bin2hex(json_encode($token_object));
             // Calculate signature
-            $signature = self::sign($token, $secret[1]);
+            $token_signature = self::sign($token_object_string, $secret[1]);
+            // Create parts
+            $token_parts = [$token_object_string, $token_signature];
+            // Combine all into token
+            $token = bin2hex(implode(self::SEPARATOR, $token_parts));
             // Return combined message
-            return [true, bin2hex(implode(self::SEPARATOR, [$token, $signature]))];
+            return [true, $token];
         }
+        // Fallback error
         return $secret;
     }
 
     /**
      * Validates a token.
      * @param string $token Token
+     * @param array $permissions Permissions
      * @return array Validation result
      */
-    public function validate($token)
+    public function validate($token, $permissions = [])
     {
         // Load secret
         $secret = $this->secret();
@@ -601,34 +618,47 @@ class Authority
             // Separate string
             $token_parts = explode(self::SEPARATOR, hex2bin($token));
             // Validate content count
-            if (count($token_parts) === 5) {
+            if (count($token_parts) === 2) {
                 // Store parts
-                $token_random = $token_parts[0];
-                $token_issuer = $token_parts[1];
-                $token_contents = $token_parts[2];
-                $token_time = $token_parts[3];
-                $token_signature = $token_parts[4];
-                // Regenerate token string
-                $token = implode(self::SEPARATOR, array_slice($token_parts, 0, 4));
+                $token_object_string = $token_parts[0];
+                $token_signature = $token_parts[1];
                 // Validate signature
-                if (self::sign($token, $secret[1]) === $token_signature) {
-                    // Validate issuer
-                    if ($token_issuer === self::hash($this->issuer)) {
-                        // Check against time
-                        $time = hex2bin($token_time);
-                        // String to int comparison is allowed
-                        if ($time > time()) {
-                            // Return token contents
-                            return [true, hex2bin($token_contents)];
+                if (self::sign($token_object_string, $secret[1]) === $token_signature) {
+                    // Parse token object
+                    $token_object = json_decode(hex2bin($token_object_string));
+                    // Validate existence
+                    if (isset($token_object->contents) && isset($token_object->permissions) && isset($token_object->issuer) && isset($token_object->expiry)) {
+                        // Validate issuer
+                        if ($token_object->issuer === self::hash($this->issuer)) {
+                            // Validate expiry
+                            if (time() < $token_object->expiry) {
+                                // Validate permissions
+                                foreach ($permissions as $permission) {
+                                    // Make sure permission exists
+                                    if (array_search($permission, $token_object->permissions) === false) {
+                                        // Fallback error
+                                        return [false, "Insufficient token permissions"];
+                                    }
+                                }
+                                // Return token
+                                return [true, $token_object->contents];
+                            }
+                            // Fallback error
+                            return [false, "Invalid token expiry"];
                         }
-                        return [false, "Token expired"];
+                        // Fallback error
+                        return [false, "Invalid token issuer"];
                     }
-                    return [false, "Invalid token issuer"];
+                    // Fallback error
+                    return [false, "Invalid token structure"];
                 }
+                // Fallback error
                 return [false, "Invalid token signature"];
             }
+            // Fallback error
             return [false, "Invalid token format"];
         }
+        // Fallback error
         return $secret;
     }
 
