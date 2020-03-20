@@ -15,7 +15,8 @@ class Authenticate {
         // View the authentication panel
         UI.page("authenticate");
         // Check authentication
-        if (Authenticate.cookie_exists("token")) {
+        let token = window.localStorage.getItem("token");
+        if (token !== null) {
             // Hide the inputs
             UI.hide("authenticate-inputs");
             // Change the output message
@@ -47,10 +48,11 @@ class Authenticate {
      */
     static authenticate(callback = null, APIs = API.hook()) {
         // Check if the session cookie exists
-        if (Authenticate.cookie_exists("token")) {
+        let token = window.localStorage.getItem("token");
+        if (token !== null) {
             // Compile the API hook
             APIs = API.hook("authenticate", "authenticate", {
-                token: Authenticate.cookie_pull("token")
+                token: token
             }, callback, APIs);
         }
         return APIs;
@@ -96,7 +98,7 @@ class Authenticate {
         }, (success, result) => {
             if (success) {
                 // Push the session cookie
-                Authenticate.cookie_push("token", result);
+                window.localStorage.setItem("token", result);
                 // Call the authentication function
                 Authenticate.authentication(callback);
             } else {
@@ -113,7 +115,7 @@ class Authenticate {
      */
     static sign_out() {
         // Push 'undefined' to the session cookie
-        Authenticate.cookie_push("token", undefined);
+        window.localStorage.removeItem("token");
     }
 
     /**
@@ -134,58 +136,5 @@ class Authenticate {
             // Clear the text color
             output.style.removeProperty("color");
         }
-    }
-
-    /**
-     * Pulls a cookie.
-     * @param name Cookie name
-     * @return {string|undefined} Cookie value
-     */
-    static cookie_pull(name) {
-        // Create a handle
-        let handle = name + "=";
-        // Loop over cookies
-        for (let cookie of document.cookie.split(";")) {
-            // Remove whitespaces
-            while (cookie.charAt(0) === " ")
-                cookie = cookie.substring(1);
-            // Check if the cookie begins with our handle
-            if (cookie.indexOf(handle) === 0) {
-                // Substring our cookie
-                cookie = cookie.substring(handle.length, cookie.length);
-                // Decode and return
-                return decodeURIComponent(cookie);
-            }
-        }
-        // Return the default 'undefined'
-        return undefined;
-    }
-
-    /**
-     * Pushes a cookie.
-     * @param name Cookie name
-     * @param value Cookie value
-     */
-    static cookie_push(name, value) {
-        let date = new Date();
-        if (value !== undefined) {
-            // Expires in one year
-            date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
-        } else {
-            // Expired already
-            date.setTime(0);
-        }
-        // Push the cookie
-        document.cookie = name + "=" + encodeURIComponent(value) + ";expires=" + date.toUTCString() + ";domain=" + window.location.hostname + ";";
-    }
-
-    /**
-     * Returns whether a cookie exists.
-     * @param name Cookie name
-     * @return {boolean} Exists
-     */
-    static cookie_exists(name) {
-        // Check if the value of the cookie is different then 'undefined'
-        return Authenticate.cookie_pull(name) !== undefined;
     }
 }
