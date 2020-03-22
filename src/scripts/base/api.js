@@ -179,7 +179,7 @@ class App {
     static prepare(callback = null) {
         // Register worker
         if ("serviceWorker" in navigator)
-            navigator.serviceWorker.register("worker.js").then();
+            navigator.serviceWorker.register("worker.js", {scope: "./"}).then();
         // Load layouts
         if (callback !== null)
             callback();
