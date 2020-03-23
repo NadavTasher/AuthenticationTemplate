@@ -267,3 +267,106 @@ class UI {
         }
     }
 }
+
+/**
+ * Base API for storage management.
+ */
+class LocationStorage {
+
+    /**
+     * Set a value in the storage.
+     * @param key Key
+     * @param value Value
+     */
+    static setItem(key, value) {
+        // Load the storage
+        let storage = LocationStorage.loadStorage();
+        // Put the value
+        storage[key] = value;
+        // Unload the storage
+        LocationStorage.unloadStorage(storage);
+    }
+
+    /**
+     * Removes a value from the storage.
+     * @param key Key
+     */
+    static removeItem(key) {
+        // Load the storage
+        let storage = LocationStorage.loadStorage();
+        // Put the value
+        storage[key] = undefined;
+        // Unload the storage
+        LocationStorage.unloadStorage(storage);
+    }
+
+    /**
+     * Get a value from the storage.
+     * @param key Key
+     */
+    static getItem(key) {
+        if (LocationStorage.hasItem(key)) {
+            // Load the storage
+            let storage = LocationStorage.loadStorage();
+            // Pull the value
+            return storage[key];
+        }
+        return null;
+    }
+
+    /**
+     * Checks is a value exists in the storage.
+     * @param key Key
+     * @return {boolean} Exists
+     */
+    static hasItem(key) {
+        // Load the storage
+        let storage = LocationStorage.loadStorage();
+        // Check existence
+        return storage.hasOwnProperty(key);
+    }
+
+    /**
+     * Clears the storage.
+     */
+    static clear() {
+        LocationStorage.unloadStorage({});
+    }
+
+    /**
+     * Unloads a storage object.
+     * @param storage Storage
+     */
+    static unloadStorage(storage) {
+        let storageString = JSON.stringify(storage);
+        window.localStorage.setItem(LocationStorage.currentPath(), storageString);
+    }
+
+    /**
+     * Loads a storage object.
+     * @return {object} Storage
+     */
+    static loadStorage() {
+        let storageString = window.localStorage.getItem(LocationStorage.currentPath());
+        if (storageString !== null) {
+            return JSON.parse(storageString);
+        } else {
+            return {};
+        }
+    }
+
+    /**
+     * Return the current path.
+     * @return {string} Path
+     */
+    static currentPath() {
+        let fullPath = window.location.pathname;
+        // Check if its a path
+        if (fullPath.endsWith("/")) {
+            return fullPath;
+        }
+        // Remove until the last /
+        return fullPath.substr(0, fullPath.lastIndexOf("/"));
+    }
+
+}

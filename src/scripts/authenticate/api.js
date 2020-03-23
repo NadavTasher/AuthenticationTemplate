@@ -15,7 +15,7 @@ class Authenticate {
         // View the authentication panel
         UI.page("authenticate");
         // Check authentication
-        let token = window.localStorage.getItem("token");
+        let token = LocationStorage.getItem("token");
         if (token !== null) {
             // Hide the inputs
             UI.hide("authenticate-inputs");
@@ -48,7 +48,7 @@ class Authenticate {
      */
     static authenticate(callback = null, APIs = API.hook()) {
         // Check if the session cookie exists
-        let token = window.localStorage.getItem("token");
+        let token = LocationStorage.getItem("token");
         if (token !== null) {
             // Compile the API hook
             APIs = API.hook("authenticate", "authenticate", {
@@ -98,7 +98,7 @@ class Authenticate {
         }, (success, result) => {
             if (success) {
                 // Push the session cookie
-                window.localStorage.setItem("token", result);
+                LocationStorage.setItem("token", result);
                 // Call the authentication function
                 Authenticate.authentication(callback);
             } else {
@@ -115,7 +115,7 @@ class Authenticate {
      */
     static sign_out() {
         // Push 'undefined' to the session cookie
-        window.localStorage.removeItem("token");
+        LocationStorage.removeItem("token");
     }
 
     /**
