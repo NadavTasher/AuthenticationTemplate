@@ -6,35 +6,36 @@
 /**
  * Authenticate API for user authentication.
  */
-class Authenticate {
+window.Authenticate = class {
+
     /**
      * Authenticates the user by requiring signup, signin and session validation.
      * @param callback Post authentication callback
      */
     static authentication(callback = null) {
         // View the authentication panel
-        UI.page("authenticate");
+        window.UI.page("authenticate");
         // Check authentication
-        let token = LocationStorage.getItem("token");
+        let token = window.PathStorage.getItem("token");
         if (token !== null) {
             // Hide the inputs
-            UI.hide("authenticate-inputs");
+            window.UI.hide("authenticate-inputs");
             // Change the output message
-            Authenticate.output("Hold on - Authenticating...");
+            this.output("Hold on - Authenticating...");
             // Send the API call
-            API.call("authenticate", Authenticate.authenticate((success, result) => {
+            window.API.call("authenticate", this.authenticate((success, result) => {
                 if (success) {
                     // Change the page
-                    UI.page("authenticated");
+                    window.UI.page("authenticated");
                     // Run the callback
                     if (callback !== null) {
                         callback();
                     }
                 } else {
                     // Show the inputs
-                    UI.show("authenticate-inputs");
+                    window.UI.show("authenticate-inputs");
                     // Change the output message
-                    Authenticate.output(result, true);
+                    this.output(result, true);
                 }
             }));
         }
@@ -48,10 +49,10 @@ class Authenticate {
      */
     static authenticate(callback = null, APIs = API.hook()) {
         // Check if the session cookie exists
-        let token = LocationStorage.getItem("token");
+        let token = window.PathStorage.getItem("token");
         if (token !== null) {
             // Compile the API hook
-            APIs = API.hook("authenticate", "authenticate", {
+            APIs = window.API.hook("authenticate", "authenticate", {
                 token: token
             }, callback, APIs);
         }
@@ -63,22 +64,22 @@ class Authenticate {
      */
     static sign_up(callback = null) {
         // Hide the inputs
-        UI.hide("authenticate-inputs");
+        window.UI.hide("authenticate-inputs");
         // Change the output message
-        Authenticate.output("Hold on - Signing you up...");
+        this.output("Hold on - Signing you up...");
         // Send the API call
-        API.send("authenticate", "signup", {
-            name: UI.get("authenticate-name").value,
-            password: UI.get("authenticate-password").value
+        window.API.send("authenticate", "signup", {
+            name: window.UI.find("authenticate-name").value,
+            password: window.UI.find("authenticate-password").value
         }, (success, result) => {
             if (success) {
                 // Call the signin function
-                Authenticate.sign_in(callback);
+                this.sign_in(callback);
             } else {
                 // Show the inputs
-                UI.show("authenticate-inputs");
+                window.UI.show("authenticate-inputs");
                 // Change the output message
-                Authenticate.output(result, true);
+                this.output(result, true);
             }
         });
     }
@@ -88,24 +89,24 @@ class Authenticate {
      */
     static sign_in(callback = null) {
         // Hide the inputs
-        UI.hide("authenticate-inputs");
+        window.UI.hide("authenticate-inputs");
         // Change the output message
-        Authenticate.output("Hold on - Signing you in...");
+        this.output("Hold on - Signing you in...");
         // Send the API call
-        API.send("authenticate", "signin", {
-            name: UI.get("authenticate-name").value,
-            password: UI.get("authenticate-password").value
+        window.API.send("authenticate", "signin", {
+            name: window.UI.find("authenticate-name").value,
+            password: window.UI.find("authenticate-password").value
         }, (success, result) => {
             if (success) {
                 // Push the session cookie
-                LocationStorage.setItem("token", result);
+                window.PathStorage.setItem("token", result);
                 // Call the authentication function
-                Authenticate.authentication(callback);
+                this.authentication(callback);
             } else {
                 // Show the inputs
-                UI.show("authenticate-inputs");
+                window.UI.show("authenticate-inputs");
                 // Change the output message
-                Authenticate.output(result, true);
+                this.output(result, true);
             }
         });
     }
@@ -115,7 +116,7 @@ class Authenticate {
      */
     static sign_out() {
         // Push 'undefined' to the session cookie
-        LocationStorage.removeItem("token");
+        window.PathStorage.removeItem("token");
     }
 
     /**
@@ -125,7 +126,7 @@ class Authenticate {
      */
     static output(text, error = false) {
         // Store the output view
-        let output = UI.get("authenticate-output");
+        let output = window.UI.find("authenticate-output");
         // Set the output message
         output.innerText = text;
         // Check if the message is an error
@@ -137,4 +138,5 @@ class Authenticate {
             output.style.removeProperty("color");
         }
     }
-}
+
+};
