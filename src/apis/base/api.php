@@ -111,6 +111,25 @@ class API
 }
 
 /**
+ * Base API for general functions.
+ */
+class Utils
+{
+    /**
+     * Creates a random string.
+     * @param int $length String length
+     * @return string String
+     */
+    public static function random($length = 0)
+    {
+        if ($length > 0) {
+            return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . self::random($length - 1);
+        }
+        return "";
+    }
+}
+
+/**
  * Base API for storing user data.
  */
 class Database
@@ -181,7 +200,7 @@ class Database
     {
         // Generate a row ID
         if ($id === null)
-            $id = self::id(32);
+            $id = Utils::random(32);
         // Check if the row already exists
         $has_row = $this->has_row($id);
         if (!$has_row[0]) {
@@ -468,19 +487,6 @@ class Database
     }
 
     /**
-     * Creates a random ID.
-     * @param int $length ID length
-     * @return string ID
-     */
-    private static function id($length = self::LENGTH_ID)
-    {
-        if ($length > 0) {
-            return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . self::id($length - 1);
-        }
-        return "";
-    }
-
-    /**
      * Hashes a message.
      * @param string $message Message
      * @param int $rounds Number of rounds
@@ -553,7 +559,7 @@ class Authority
         // Make sure a shared secret exists
         if (!file_exists($this->secret_file)) {
             // Create the secret file
-            file_put_contents($this->secret_file, self::random(self::LENGTH_SECRET));
+            file_put_contents($this->secret_file, Utils::random(self::LENGTH_SECRET));
         }
         // Make sure the .htaccess exists
         if (!file_exists($this->access_file)) {
@@ -602,7 +608,7 @@ class Authority
             // Create parts
             $token_parts = [$token_object_string, $token_signature];
             // Combine all into token
-            $token = bin2hex(implode(self::SEPARATOR, $token_parts));
+            $token = implode(self::SEPARATOR, $token_parts);
             // Return combined message
             return [true, $token];
         }
@@ -622,8 +628,9 @@ class Authority
         $secret = $this->secret();
         // Make sure secret exists
         if ($secret[0]) {
+            // Try parsing
             // Separate string
-            $token_parts = explode(self::SEPARATOR, hex2bin($token));
+            $token_parts = explode(self::SEPARATOR, $token);
             // Validate content count
             if (count($token_parts) === 2) {
                 // Store parts
@@ -702,18 +709,5 @@ class Authority
         } else {
             return hash(self::HASHING_ALGORITHM, self::hash($message, $rounds - 1));
         }
-    }
-
-    /**
-     * Creates a random string.
-     * @param int $length String length
-     * @return string String
-     */
-    private static function random($length = 0)
-    {
-        if ($length > 0) {
-            return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . self::random($length - 1);
-        }
-        return "";
     }
 }

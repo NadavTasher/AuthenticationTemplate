@@ -6,7 +6,7 @@
 /**
  * Authenticate API for user authentication.
  */
-window.Authenticate = class {
+class Authenticate {
 
     /**
      * Authenticates the user by requiring signup, signin and session validation.
@@ -14,26 +14,26 @@ window.Authenticate = class {
      */
     static authentication(callback = null) {
         // View the authentication panel
-        window.UI.page("authenticate");
+        UI.page("authenticate");
         // Check authentication
-        let token = window.PathStorage.getItem("authenticate");
+        let token = PathStorage.getItem("authenticate");
         if (token !== null) {
             // Hide the inputs
-            window.UI.hide("authenticate-inputs");
+            UI.hide("authenticate-inputs");
             // Change the output message
             this.output("Hold on - Authenticating...");
             // Send the API call
-            window.API.call("authenticate", this.authenticate((success, result) => {
+            API.call("authenticate", this.authenticate((success, result) => {
                 if (success) {
                     // Change the page
-                    window.UI.page("authenticated");
+                    UI.page("authenticated");
                     // Run the callback
                     if (callback !== null) {
                         callback();
                     }
                 } else {
                     // Show the inputs
-                    window.UI.show("authenticate-inputs");
+                    UI.show("authenticate-inputs");
                     // Change the output message
                     this.output(result, true);
                 }
@@ -49,10 +49,10 @@ window.Authenticate = class {
      */
     static authenticate(callback = null, APIs = API.hook()) {
         // Check if the session cookie exists
-        let token = window.PathStorage.getItem("authenticate");
+        let token = PathStorage.getItem("authenticate");
         if (token !== null) {
             // Compile the API hook
-            APIs = window.API.hook("authenticate", "authenticate", {
+            APIs = API.hook("authenticate", "authenticate", {
                 token: token
             }, callback, APIs);
         }
@@ -64,20 +64,20 @@ window.Authenticate = class {
      */
     static sign_up(callback = null) {
         // Hide the inputs
-        window.UI.hide("authenticate-inputs");
+        UI.hide("authenticate-inputs");
         // Change the output message
         this.output("Hold on - Signing you up...");
         // Send the API call
-        window.API.send("authenticate", "signup", {
-            name: window.UI.find("authenticate-name").value,
-            password: window.UI.find("authenticate-password").value
+        API.send("authenticate", "signup", {
+            name: UI.find("authenticate-name").value,
+            password: UI.find("authenticate-password").value
         }, (success, result) => {
             if (success) {
                 // Call the signin function
                 this.sign_in(callback);
             } else {
                 // Show the inputs
-                window.UI.show("authenticate-inputs");
+                UI.show("authenticate-inputs");
                 // Change the output message
                 this.output(result, true);
             }
@@ -89,22 +89,22 @@ window.Authenticate = class {
      */
     static sign_in(callback = null) {
         // Hide the inputs
-        window.UI.hide("authenticate-inputs");
+        UI.hide("authenticate-inputs");
         // Change the output message
         this.output("Hold on - Signing you in...");
         // Send the API call
-        window.API.send("authenticate", "signin", {
-            name: window.UI.find("authenticate-name").value,
-            password: window.UI.find("authenticate-password").value
+        API.send("authenticate", "signin", {
+            name: UI.find("authenticate-name").value,
+            password: UI.find("authenticate-password").value
         }, (success, result) => {
             if (success) {
                 // Push the session cookie
-                window.PathStorage.setItem("authenticate", result);
+                PathStorage.setItem("authenticate", result);
                 // Call the authentication function
                 this.authentication(callback);
             } else {
                 // Show the inputs
-                window.UI.show("authenticate-inputs");
+                UI.show("authenticate-inputs");
                 // Change the output message
                 this.output(result, true);
             }
@@ -116,7 +116,7 @@ window.Authenticate = class {
      */
     static sign_out() {
         // Push 'undefined' to the session cookie
-        window.PathStorage.removeItem("authenticate");
+        PathStorage.removeItem("authenticate");
     }
 
     /**
@@ -126,7 +126,7 @@ window.Authenticate = class {
      */
     static output(text, error = false) {
         // Store the output view
-        let output = window.UI.find("authenticate-output");
+        let output = UI.find("authenticate-output");
         // Set the output message
         output.innerText = text;
         // Check if the message is an error
@@ -139,4 +139,4 @@ window.Authenticate = class {
         }
     }
 
-};
+}

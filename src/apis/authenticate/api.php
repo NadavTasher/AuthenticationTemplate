@@ -14,7 +14,7 @@ include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base"
 class Authenticate
 {
     // API string
-    public const API = "authenticate";
+    private const API = "authenticate";
     // Configuration properties
     private const CONFIGURATION_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . "configuration";
     private const HOOKS_FILE = self::CONFIGURATION_DIRECTORY . DIRECTORY_SEPARATOR . "hooks.json";
@@ -39,7 +39,7 @@ class Authenticate
     private static Authority $authority;
 
     /**
-     * Main API hook. Can be used by other APIs to handle authentication.
+     * API initializer.
      */
     public static function init()
     {
@@ -51,6 +51,16 @@ class Authenticate
         self::$database->create_column(self::COLUMN_LOCK);
         // Make sure the authority is set-up
         self::$authority = new Authority(self::API);
+    }
+
+    /**
+     * Main API hook.
+     * @return mixed|null Result
+     */
+    public static function handle()
+    {
+        // Init the API
+        self::init();
         // Return the result so that other APIs could use it.
         return API::handle(self::API, function ($action, $parameters) {
             $configuration = self::hooks();

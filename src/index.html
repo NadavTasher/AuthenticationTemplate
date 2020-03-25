@@ -29,13 +29,14 @@
     <!-- Scripts -->
     <script type="text/javascript" src="scripts/app.js"></script>
     <script type="text/javascript" src="scripts/base/api.js"></script>
+    <script type="text/javascript" src="scripts/notifier/api.js"></script>
     <script type="text/javascript" src="scripts/authenticate/api.js"></script>
     <!-- App Title -->
     <title>AppName</title>
     <!-- No Script -->
     <noscript></noscript>
 </head>
-<body onload="window.prepare(()=>window.Authenticate.authentication(load))" column>
+<body onload="window.prepare(()=>Authenticate.authentication(load))" column>
 <div id="authenticate" column>
     <p style="font-size: 5vh;">Welcome to AppName</p>
     <p style="font-size: 3vh;" id="authenticate-output">Please authenticate to continue.</p>
@@ -43,8 +44,8 @@
         <input id="authenticate-name" type="text" placeholder="Name"/>
         <input id="authenticate-password" type="password" placeholder="Password"/>
         <div id="authenticate-buttons" row>
-            <button onclick="window.Authenticate.sign_up(load)">Sign Up</button>
-            <button onclick="window.Authenticate.sign_in(load)">Sign In</button>
+            <button onclick="Authenticate.sign_up(load)">Sign Up</button>
+            <button onclick="Authenticate.sign_in(load)">Sign In</button>
         </div>
     </div>
 </div>

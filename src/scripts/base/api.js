@@ -7,19 +7,21 @@
  * Prepares the web page (loads ServiceWorker).
  * @param callback Function to be executed when loading finishes
  */
-window.prepare = function (callback = null) {
-    // Register worker
-    if ("serviceWorker" in navigator)
-        navigator.serviceWorker.register("worker.js", {scope: "./"}).then();
-    // Callback
-    if (callback !== null)
-        callback();
-};
+if (typeof window !== typeof undefined) {
+    window.prepare = function (callback = null) {
+        // Register worker
+        if ("serviceWorker" in navigator)
+            navigator.serviceWorker.register("worker.js", {scope: "./"}).then();
+        // Callback
+        if (callback !== null)
+            callback();
+    };
+}
 
 /**
  * Base API for sending requests.
  */
-window.API = class {
+class API {
 
     /**
      * Sends an API call.
@@ -30,7 +32,7 @@ window.API = class {
      * @param APIs API list
      */
     static send(endpoint = null, action = null, parameters = null, callback = null, APIs = {}) {
-        this.call(endpoint, API.hook(endpoint, action, parameters, callback, APIs));
+        this.call(endpoint, this.hook(endpoint, action, parameters, callback, APIs));
     }
 
     /**
@@ -46,7 +48,7 @@ window.API = class {
             // Append the compiled hook as "api"
             form.append("api", JSON.stringify(APIs.apis));
             // Make sure the device is online
-            if (window.navigator.onLine) {
+            if (typeof window === typeof undefined || window.navigator.onLine) {
                 // Perform the request
                 fetch("apis/" + endpoint + "/", {
                     method: "post",
@@ -127,13 +129,12 @@ window.API = class {
         return APIs;
     }
 
-};
+}
 
 /**
  * Base API for token validation.
- * @type {Window.Authority}
  */
-window.Authority = class {
+class Authority {
 
     /**
      * Validates a given token and return its contents.
@@ -142,7 +143,7 @@ window.Authority = class {
      */
     static validate(token, permissions = []) {
         // Split the token
-        let token_parts = this.hex2bin(token).split(":");
+        let token_parts = token.split(":");
         // Make sure the token is two parts
         if (token_parts.length === 2) {
             // Parse object
@@ -185,12 +186,12 @@ window.Authority = class {
         return string;
     }
 
-};
+}
 
 /**
  * Base API for storage management.
  */
-window.PathStorage = class {
+class PathStorage {
 
     /**
      * Set a value in the storage.
@@ -288,12 +289,12 @@ window.PathStorage = class {
         return fullPath.substr(0, fullPath.lastIndexOf("/"));
     }
 
-};
+}
 
 /**
  * Base API for creating the UI.
  */
-window.UI = class {
+class UI {
 
     /**
      * Returns a view by its ID or by it's own value.
@@ -379,4 +380,4 @@ window.UI = class {
         view.innerHTML = undefined;
     }
 
-};
+}
