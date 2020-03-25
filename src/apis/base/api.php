@@ -503,7 +503,7 @@ class Database
 }
 
 /**
- * Base API for creating and verifying tokens.
+ * Base API for issuing and validating tokens.
  */
 class Authority
 {
