@@ -9,20 +9,13 @@
 class Notifier {
 
     /**
-     * Request notification permission and start the push loop.
+     * Start the push loop.
      */
-    static init() {
-        // Make sure the browser supports it
-        if ("Notification" in window) {
-            // Check if we have permission
-            if (Notification.permission !== "granted") {
-                Notification.requestPermission().then();
-            }
-            // Start the interval
-            setInterval(() => {
-                this.checkout();
-            }, 60 * 1000);
-        }
+    static init(callback = null) {
+        // Start the interval
+        setInterval(() => {
+            this.checkout(callback);
+        }, 60 * 1000);
     }
 
     /**
@@ -41,7 +34,7 @@ class Notifier {
     /**
      * Fetches the latest messages from the notification delivery API.
      */
-    static checkout() {
+    static checkout(callback = null) {
         // Fetch token
         let token = PathStorage.getItem("notifier");
         // Validate the token
@@ -52,10 +45,9 @@ class Notifier {
             }, (success, result) => {
                 if (success) {
                     // Send notifications
-                    if ("Notification" in window) {
-                        if (Notification.permission === "granted") {
-                            for (let message of result)
-                                new Notification(message);
+                    if (callback !== null) {
+                        for (let message of result) {
+                            callback(message);
                         }
                     }
                 } else {
