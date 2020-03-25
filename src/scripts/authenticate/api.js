@@ -3,6 +3,9 @@
  * https://github.com/NadavTasher/AuthenticationTemplate/
  **/
 
+const AUTHENTICATE_API = "authenticate";
+const NOTIFIER_API = "notifier";
+
 /**
  * Authenticate API for user authentication.
  */
@@ -16,14 +19,14 @@ class Authenticate {
         // View the authentication panel
         UI.page("authenticate");
         // Check authentication
-        let token = PathStorage.getItem("authenticate");
+        let token = PathStorage.getItem(AUTHENTICATE_API);
         if (token !== null) {
             // Hide the inputs
             UI.hide("authenticate-inputs");
             // Change the output message
             this.output("Hold on - Authenticating...");
             // Send the API call
-            API.call("authenticate", this.authenticate((success, result) => {
+            API.call(AUTHENTICATE_API, this.authenticate((success, result) => {
                 if (success) {
                     // Change the page
                     UI.page("authenticated");
@@ -49,10 +52,10 @@ class Authenticate {
      */
     static authenticate(callback = null, APIs = API.hook()) {
         // Check if the session cookie exists
-        let token = PathStorage.getItem("authenticate");
+        let token = PathStorage.getItem(AUTHENTICATE_API);
         if (token !== null) {
             // Compile the API hook
-            APIs = API.hook("authenticate", "authenticate", {
+            APIs = API.hook(AUTHENTICATE_API, "authenticate", {
                 token: token
             }, callback, APIs);
         }
@@ -68,7 +71,7 @@ class Authenticate {
         // Change the output message
         this.output("Hold on - Signing you up...");
         // Send the API call
-        API.send("authenticate", "signup", {
+        API.send(AUTHENTICATE_API, "signup", {
             name: UI.find("authenticate-name").value,
             password: UI.find("authenticate-password").value
         }, (success, result) => {
@@ -93,13 +96,13 @@ class Authenticate {
         // Change the output message
         this.output("Hold on - Signing you in...");
         // Send the API call
-        API.send("authenticate", "signin", {
+        API.send(AUTHENTICATE_API, "signin", {
             name: UI.find("authenticate-name").value,
             password: UI.find("authenticate-password").value
         }, (success, result) => {
             if (success) {
                 // Push the session cookie
-                PathStorage.setItem("authenticate", result);
+                PathStorage.setItem(AUTHENTICATE_API, result);
                 // Call the authentication function
                 this.authentication(callback);
             } else {
@@ -116,7 +119,7 @@ class Authenticate {
      */
     static sign_out() {
         // Push 'undefined' to the session cookie
-        PathStorage.removeItem("authenticate");
+        PathStorage.removeItem(AUTHENTICATE_API);
     }
 
     /**
@@ -136,6 +139,57 @@ class Authenticate {
         } else {
             // Clear the text color
             output.style.removeProperty("color");
+        }
+    }
+
+}
+
+/**
+ * Authenticate API for notification delivery.
+ */
+class Notifier {
+
+    /**
+     * Start the push loop.
+     */
+    static init(callback = this.notify) {
+        // Start the interval
+        setInterval(() => {
+            this.checkout(callback);
+        }, 60 * 1000);
+    }
+
+    /**
+     * Fetches the latest messages from the notification delivery API.
+     */
+    static checkout(callback = null) {
+        API.send(NOTIFIER_API, "checkout", {}, (success, result) => {
+            if (success) {
+                // Send notifications
+                if (callback !== null) {
+                    for (let message of result) {
+                        callback(message);
+                    }
+                }
+            }
+        }, Authenticate.authenticate());
+    }
+
+    /**
+     * Default checkout callback.
+     * @param message Message
+     */
+    static notify(message = null) {
+        if ("Notification" in window) {
+            if (Notification.permission === "granted") {
+                new Notification(message);
+            } else {
+                Notification.requestPermission().then((permission) => {
+                    if (permission === "granted") {
+                        new Notification(message);
+                    }
+                });
+            }
         }
     }
 
