@@ -16,7 +16,7 @@ window.Authenticate = class {
         // View the authentication panel
         window.UI.page("authenticate");
         // Check authentication
-        let token = window.PathStorage.getItem("token");
+        let token = window.PathStorage.getItem("authenticate");
         if (token !== null) {
             // Hide the inputs
             window.UI.hide("authenticate-inputs");
@@ -49,7 +49,7 @@ window.Authenticate = class {
      */
     static authenticate(callback = null, APIs = API.hook()) {
         // Check if the session cookie exists
-        let token = window.PathStorage.getItem("token");
+        let token = window.PathStorage.getItem("authenticate");
         if (token !== null) {
             // Compile the API hook
             APIs = window.API.hook("authenticate", "authenticate", {
@@ -99,7 +99,7 @@ window.Authenticate = class {
         }, (success, result) => {
             if (success) {
                 // Push the session cookie
-                window.PathStorage.setItem("token", result);
+                window.PathStorage.setItem("authenticate", result);
                 // Call the authentication function
                 this.authentication(callback);
             } else {
@@ -116,7 +116,7 @@ window.Authenticate = class {
      */
     static sign_out() {
         // Push 'undefined' to the session cookie
-        window.PathStorage.removeItem("token");
+        window.PathStorage.removeItem("authenticate");
     }
 
     /**
