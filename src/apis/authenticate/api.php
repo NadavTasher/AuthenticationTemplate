@@ -14,7 +14,7 @@ include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base"
 class Authenticate
 {
     // API string
-    private const API = "authenticate";
+    public const API = "authenticate";
     // Configuration properties
     private const CONFIGURATION_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . "configuration";
     private const HOOKS_FILE = self::CONFIGURATION_DIRECTORY . DIRECTORY_SEPARATOR . "hooks.json";
