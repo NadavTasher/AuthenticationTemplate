@@ -45,10 +45,10 @@ class Authenticate
     {
         // Make sure the database is initiated.
         self::$database = new Database(self::API);
-        self::$database->create_column(self::COLUMN_NAME);
-        self::$database->create_column(self::COLUMN_SALT);
-        self::$database->create_column(self::COLUMN_HASH);
-        self::$database->create_column(self::COLUMN_LOCK);
+        self::$database->createColumn(self::COLUMN_NAME);
+        self::$database->createColumn(self::COLUMN_SALT);
+        self::$database->createColumn(self::COLUMN_HASH);
+        self::$database->createColumn(self::COLUMN_LOCK);
         // Make sure the authority is set-up
         self::$authority = new Authority(self::API);
     }
@@ -72,10 +72,10 @@ class Authenticate
                                 if (is_string($parameters->token)) {
                                     if (self::TOKENS) {
                                         // Authenticate the user using tokens
-                                        return self::token($parameters->token);
+                                        return self::authenticateToken($parameters->token);
                                     } else {
                                         // Authenticate the user using sessions
-                                        return self::session($parameters->token);
+                                        return self::authenticateSession($parameters->token);
                                     }
                                 }
                                 return [false, "Incorrect type"];
@@ -91,9 +91,9 @@ class Authenticate
                                     if ($search[0]) {
                                         if (count($ids = $search[1]) === 1) {
                                             if (self::TOKENS) {
-                                                return self::token_add($ids[0], $parameters->password);
+                                                return self::createToken($ids[0], $parameters->password);
                                             } else {
-                                                return self::session_add($ids[0], $parameters->password);
+                                                return self::createSession($ids[0], $parameters->password);
                                             }
                                         }
                                         return [false, "User not found"];
@@ -109,7 +109,7 @@ class Authenticate
                                 isset($parameters->password)) {
                                 if (is_string($parameters->name) &&
                                     is_string($parameters->password)) {
-                                    return self::user_add($parameters->name, $parameters->password);
+                                    return self::createUser($parameters->name, $parameters->password);
                                 }
                                 return [false, "Incorrect type"];
                             }
@@ -126,6 +126,40 @@ class Authenticate
     }
 
     /**
+     * Finds a user's name by its ID.
+     * @param string $id User ID
+     * @return array Results
+     */
+    public static function findName($id)
+    {
+        // Check if the user's row exists
+        if (self::$database->hasRow($id)[0]) {
+            // Retrieve the name value
+            return self::$database->get($id, self::COLUMN_NAME);
+        }
+        // Fallback result
+        return [false, "User doesn't exist"];
+    }
+
+    /**
+     * Finds a user's ID by its name.
+     * @param string $name User Name
+     * @return array Result
+     */
+    public static function findID($name)
+    {
+        $search = self::$database->search(self::COLUMN_NAME, $name);
+        if ($search[0]) {
+            if (count($search[1]) > 0) {
+                return [true, $search[1][0]];
+            }
+            return [false, "User doesn't exist"];
+        }
+        // Fallback result
+        return $search;
+    }
+
+    /**
      * Loads the hooks configurations.
      * @return stdClass Hooks Configuration
      */
@@ -135,15 +169,56 @@ class Authenticate
     }
 
     /**
+     * Creates a new user.
+     * @param string $name User Name
+     * @param string $password User Password
+     * @return array Results
+     */
+    private static function createUser($name, $password)
+    {
+        // Check user name
+        $search = self::$database->search(self::COLUMN_NAME, $name);
+        if ($search[0]) {
+            if (count($search[1]) === 0) {
+                // Check password length
+                if (strlen($password) >= self::LENGTH_PASSWORD) {
+                    // Generate a unique user id
+                    $id = self::$database->createRow();
+                    if ($id[0]) {
+                        // Generate salt and hash
+                        $salt = Utils::random(self::LENGTH_SALT);
+                        $hash = self::hash($password, $salt);
+                        // Set user information
+                        self::$database->set($id[1], self::COLUMN_NAME, $name);
+                        self::$database->set($id[1], self::COLUMN_SALT, $salt);
+                        self::$database->set($id[1], self::COLUMN_HASH, $hash);
+                        self::$database->set($id[1], self::COLUMN_LOCK, strval("0"));
+                        // Return a success result
+                        return [true, null];
+                    }
+                    // Fallback result
+                    return $id;
+                }
+                // Fallback result
+                return [false, "Password too short"];
+            }
+            // Fallback result
+            return [false, "User already exists"];
+        }
+        // Fallback result
+        return $search;
+    }
+
+    /**
      * Authenticates a user using $id and $password, then returns a User ID.
      * @param string $id User ID
      * @param string $password User Password
      * @return array Result
      */
-    private static function user($id, $password)
+    private static function authenticatePassword($id, $password)
     {
         // Check if the user's row exists
-        if (self::$database->has_row($id)[0]) {
+        if (self::$database->hasRow($id)[0]) {
             // Retrieve the lock value
             $lock = self::$database->get($id, self::COLUMN_LOCK);
             if ($lock[0]) {
@@ -154,7 +229,7 @@ class Authenticate
                     $hash = self::$database->get($id, self::COLUMN_HASH);
                     if ($salt[0] && $hash[0]) {
                         // Check password match
-                        if (self::hash_salted($password, $salt[1]) === $hash[1]) {
+                        if (self::hash($password, $salt[1]) === $hash[1]) {
                             // Return a success result
                             return [true, null];
                         } else {
@@ -178,44 +253,22 @@ class Authenticate
     }
 
     /**
-     * Creates a new user.
-     * @param string $name User Name
-     * @param string $password User Password
-     * @return array Results
+     * Authenticates a user and creates a new token for that user.
+     * @param string $id User ID
+     * @param string $password User password
+     * @return array Result
      */
-    private static function user_add($name, $password)
+    private static function createToken($id, $password)
     {
-        // Check user name
-        $search = self::$database->search(self::COLUMN_NAME, $name);
-        if ($search[0]) {
-            if (count($search[1]) === 0) {
-                // Check password length
-                if (strlen($password) >= self::LENGTH_PASSWORD) {
-                    // Generate a unique user id
-                    $id = self::$database->create_row();
-                    if ($id[0]) {
-                        // Generate salt and hash
-                        $salt = self::random(self::LENGTH_SALT);
-                        $hash = self::hash_salted($password, $salt);
-                        // Set user information
-                        self::$database->set($id[1], self::COLUMN_NAME, $name);
-                        self::$database->set($id[1], self::COLUMN_SALT, $salt);
-                        self::$database->set($id[1], self::COLUMN_HASH, $hash);
-                        self::$database->set($id[1], self::COLUMN_LOCK, strval("0"));
-                        // Return a success result
-                        return [true, null];
-                    }
-                    // Fallback result
-                    return $id;
-                }
-                // Fallback result
-                return [false, "Password too short"];
-            }
-            // Fallback result
-            return [false, "User already exists"];
+        // Authenticate the user by an ID and password
+        $authentication = self::authenticatePassword($id, $password);
+        // Check authentication result
+        if ($authentication[0]) {
+            // Return a success result
+            return self::$authority->issue($id);
         }
         // Fallback result
-        return $search;
+        return $authentication;
     }
 
     /**
@@ -223,7 +276,7 @@ class Authenticate
      * @param string $token Token
      * @return array Result
      */
-    private static function token($token)
+    private static function authenticateToken($token)
     {
         // Check if the token is valid
         $result = self::$authority->validate($token);
@@ -236,57 +289,21 @@ class Authenticate
     }
 
     /**
-     * Authenticates a user and creates a new token for that user.
-     * @param string $id User ID
-     * @param string $password User password
-     * @return array Result
-     */
-    private static function token_add($id, $password)
-    {
-        // Authenticate the user by an ID and password
-        $authentication = self::user($id, $password);
-        // Check authentication result
-        if ($authentication[0]) {
-            // Return a success result
-            return self::$authority->issue($id);
-        }
-        // Fallback result
-        return $authentication;
-    }
-
-    /**
-     * Authenticates a user using $session then returns a User ID.
-     * @param string $session Session
-     * @return array Result
-     */
-    private static function session($session)
-    {
-        // Check if a link with the session's hash value
-        $has_link = self::$database->has_link(self::hash($session));
-        if ($has_link[0]) {
-            // Return a success result with a server result of the user's ID
-            return [true, null, $has_link[1]];
-        }
-        // Fallback result
-        return [false, "Invalid session"];
-    }
-
-    /**
      * Authenticates a user and creates a new session for that user.
      * @param string $id User ID
      * @param string $password User password
      * @return array Result
      */
-    private static function session_add($id, $password)
+    private static function createSession($id, $password)
     {
         // Authenticate the user by an ID and password
-        $authentication = self::user($id, $password);
+        $authentication = self::authenticatePassword($id, $password);
         // Check authentication result
         if ($authentication[0]) {
             // Generate a new session ID
-            $session = self::random(self::LENGTH_SESSION);
+            $session = Utils::random(self::LENGTH_SESSION);
             // Create a database link with the session's hash
-            $create_link = self::$database->create_link($id, self::hash($session));
+            $create_link = self::$database->createLink($id, self::hash($session));
             if ($create_link[0]) {
                 return [true, $session];
             }
@@ -298,54 +315,39 @@ class Authenticate
     }
 
     /**
-     * Hashes a secret.
-     * @param string $message Message
-     * @param int $rounds Number of rounds
-     * @return string Hashed
+     * Authenticates a user using $session then returns a User ID.
+     * @param string $session Session
+     * @return array Result
      */
-    private static function hash($message, $rounds = self::HASHING_ROUNDS)
+    private static function authenticateSession($session)
     {
-        // Layer > 0 result
-        if ($rounds > 0) {
-            $layer = self::hash($message, $rounds - 1);
-            $return = hash(self::HASHING_ALGORITHM, $layer);
-        } else {
-            // Layer 0 result
-            $return = hash(self::HASHING_ALGORITHM, $message);
+        // Check if a link with the session's hash value
+        $has_link = self::$database->hasLink(self::hash($session));
+        if ($has_link[0]) {
+            // Return a success result with a server result of the user's ID
+            return [true, null, $has_link[1]];
         }
-        return $return;
+        // Fallback result
+        return [false, "Invalid session"];
     }
 
     /**
-     * Hashes a secret with a salt.
+     * Hashes a secret with or without a salt.
      * @param string $secret Secret
-     * @param string $salt Salt
      * @param int $rounds Number of rounds to hash
+     * @param string $salt Salt
      * @return string Hashed
      */
-    private static function hash_salted($secret, $salt, $rounds = self::HASHING_ROUNDS)
+    private static function hash($secret, $rounds = self::HASHING_ROUNDS, $salt = "")
     {
         // Layer > 0 result
         if ($rounds > 0) {
-            $layer = self::hash_salted($secret, $salt, $rounds - 1);
+            $layer = self::hash($secret, $rounds - 1, $salt);
             $return = hash(self::HASHING_ALGORITHM, ($rounds % 2 === 0 ? $layer . $salt : $salt . $layer));
         } else {
             // Layer 0 result
             $return = hash(self::HASHING_ALGORITHM, $secret . $salt);
         }
         return $return;
-    }
-
-    /**
-     * Creates a random string.
-     * @param int $length String length
-     * @return string String
-     */
-    private static function random($length = 0)
-    {
-        if ($length > 0) {
-            return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . self::random($length - 1);
-        }
-        return "";
     }
 }

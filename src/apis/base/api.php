@@ -197,13 +197,13 @@ class Database
      * @param null $id ID
      * @return array Result
      */
-    public function create_row($id = null)
+    public function createRow($id = null)
     {
         // Generate a row ID
         if ($id === null)
             $id = Utils::random(32);
         // Check if the row already exists
-        $has_row = $this->has_row($id);
+        $has_row = $this->hasRow($id);
         if (!$has_row[0]) {
             // Create row directory
             mkdir($this->directory_rows . DIRECTORY_SEPARATOR . $id);
@@ -218,12 +218,12 @@ class Database
      * @param string $name Column name
      * @return array Result
      */
-    public function create_column($name)
+    public function createColumn($name)
     {
         // Generate hashed string
         $hashed = self::hash($name);
         // Check if the column already exists
-        $has_column = $this->has_column($name);
+        $has_column = $this->hasColumn($name);
         if (!$has_column[0]) {
             // Create column directory
             mkdir($this->directory_columns . DIRECTORY_SEPARATOR . $hashed);
@@ -239,15 +239,15 @@ class Database
      * @param string $link Link value
      * @return array Result
      */
-    public function create_link($row, $link)
+    public function createLink($row, $link)
     {
         // Generate hashed string
         $hashed = self::hash($link);
         // Check if the link already exists
-        $has_link = $this->has_link($link);
+        $has_link = $this->hasLink($link);
         if (!$has_link[0]) {
             // Make sure the row exists
-            $has_row = $this->has_row($row);
+            $has_row = $this->hasRow($row);
             if ($has_row[0]) {
                 // Generate link file
                 file_put_contents($this->directory_links . DIRECTORY_SEPARATOR . $hashed, $row);
@@ -264,7 +264,7 @@ class Database
      * @param string $id Row ID
      * @return array Result
      */
-    public function has_row($id)
+    public function hasRow($id)
     {
         // Store path
         $path = $this->directory_rows . DIRECTORY_SEPARATOR . $id;
@@ -280,7 +280,7 @@ class Database
      * @param string $name Column name
      * @return array Result
      */
-    public function has_column($name)
+    public function hasColumn($name)
     {
         // Generate hashed string
         $hashed = self::hash($name);
@@ -298,7 +298,7 @@ class Database
      * @param string $link Link value
      * @return array Result
      */
-    public function has_link($link)
+    public function hasLink($link)
     {
         // Generate hashed string
         $hashed = self::hash($link);
@@ -325,10 +325,10 @@ class Database
     public function isset($row, $column)
     {
         // Check if row exists
-        $has_row = $this->has_row($row);
+        $has_row = $this->hasRow($row);
         if ($has_row[0]) {
             // Check if the column exists
-            $has_column = $this->has_column($column);
+            $has_column = $this->hasColumn($column);
             if ($has_column[0]) {
                 // Generate hashed string
                 $hashed = self::hash($column);
@@ -359,7 +359,7 @@ class Database
             $this->unset($row, $column);
         }
         // Check if the column exists
-        $has_column = $this->has_column($column);
+        $has_column = $this->hasColumn($column);
         if ($has_column[0]) {
             // Create hashed string
             $hashed_name = self::hash($column);
@@ -402,7 +402,7 @@ class Database
         $isset = $this->isset($row, $column);
         if ($isset[0]) {
             // Check if the column exists
-            $has_column = $this->has_column($column);
+            $has_column = $this->hasColumn($column);
             if ($has_column[0]) {
                 // Create hashed string
                 $hashed_name = self::hash($column);
@@ -467,7 +467,7 @@ class Database
         // Create rows array
         $rows = array();
         // Check if the column exists
-        $has_column = $this->has_column($column);
+        $has_column = $this->hasColumn($column);
         if ($has_column[0]) {
             // Create hashed string
             $hashed_name = self::hash($column);

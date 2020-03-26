@@ -30,7 +30,7 @@ class Notifier
     {
         // Initialize database
         self::$database = new Database(self::API);
-        self::$database->create_column(self::COLUMN_MESSAGES);
+        self::$database->createColumn(self::COLUMN_MESSAGES);
     }
 
     /**
@@ -62,8 +62,8 @@ class Notifier
     public static function notify($id, $message)
     {
         // Make sure the ID exists
-        if (!self::$database->has_row($id)[0]) {
-            self::$database->create_row($id);
+        if (!self::$database->hasRow($id)[0]) {
+            self::$database->createRow($id);
         }
         // Initialize messages array
         $messages = array();
@@ -85,8 +85,8 @@ class Notifier
     public static function checkout($id)
     {
         // Make sure the ID exists
-        if (!self::$database->has_row($id)[0]) {
-            self::$database->create_row($id);
+        if (!self::$database->hasRow($id)[0]) {
+            self::$database->createRow($id);
         }
         // Initialize messages array
         $messages = array();
