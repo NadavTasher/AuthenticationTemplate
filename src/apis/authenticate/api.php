@@ -23,9 +23,6 @@ class Authenticate
     private const COLUMN_SALT = "salt";
     private const COLUMN_HASH = "hash";
     private const COLUMN_LOCK = "lock";
-    // Hashing properties
-    private const HASHING_ALGORITHM = "sha256";
-    private const HASHING_ROUNDS = 1024;
     // Lengths
     private const LENGTH_SALT = 512;
     private const LENGTH_SESSION = 512;
@@ -187,7 +184,7 @@ class Authenticate
                     if ($id[0]) {
                         // Generate salt and hash
                         $salt = Utils::random(self::LENGTH_SALT);
-                        $hash = self::hash($password, $salt);
+                        $hash = Utils::hash($password . $salt);
                         // Set user information
                         self::$database->set($id[1], self::COLUMN_NAME, $name);
                         self::$database->set($id[1], self::COLUMN_SALT, $salt);
@@ -229,7 +226,7 @@ class Authenticate
                     $hash = self::$database->get($id, self::COLUMN_HASH);
                     if ($salt[0] && $hash[0]) {
                         // Check password match
-                        if (self::hash($password, $salt[1]) === $hash[1]) {
+                        if (Utils::hash($password . $salt[1]) === $hash[1]) {
                             // Return a success result
                             return [true, null];
                         } else {
@@ -303,7 +300,7 @@ class Authenticate
             // Generate a new session ID
             $session = Utils::random(self::LENGTH_SESSION);
             // Create a database link with the session's hash
-            $create_link = self::$database->createLink($id, self::hash($session));
+            $create_link = self::$database->createLink($id, Utils::hash($session));
             if ($create_link[0]) {
                 return [true, $session];
             }
@@ -322,32 +319,12 @@ class Authenticate
     private static function authenticateSession($session)
     {
         // Check if a link with the session's hash value
-        $has_link = self::$database->hasLink(self::hash($session));
+        $has_link = self::$database->hasLink(Utils::hash($session));
         if ($has_link[0]) {
             // Return a success result with a server result of the user's ID
             return [true, null, $has_link[1]];
         }
         // Fallback result
         return [false, "Invalid session"];
-    }
-
-    /**
-     * Hashes a secret with or without a salt.
-     * @param string $secret Secret
-     * @param int $rounds Number of rounds to hash
-     * @param string $salt Salt
-     * @return string Hashed
-     */
-    private static function hash($secret, $rounds = self::HASHING_ROUNDS, $salt = "")
-    {
-        // Layer > 0 result
-        if ($rounds > 0) {
-            $layer = self::hash($secret, $rounds - 1, $salt);
-            $return = hash(self::HASHING_ALGORITHM, ($rounds % 2 === 0 ? $layer . $salt : $salt . $layer));
-        } else {
-            // Layer 0 result
-            $return = hash(self::HASHING_ALGORITHM, $secret . $salt);
-        }
-        return $return;
     }
 }

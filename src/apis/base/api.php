@@ -115,6 +115,9 @@ class API
  */
 class Utils
 {
+    private const HASHING_ALGORITHM = "sha256";
+    private const HASHING_ROUNDS = 16;
+
     /**
      * Creates a random string.
      * @param int $length String length
@@ -126,6 +129,35 @@ class Utils
             return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . self::random($length - 1);
         }
         return "";
+    }
+
+    /**
+     * Hashes a message.
+     * @param string $message Message
+     * @param int $rounds Number of rounds
+     * @return string Hash
+     */
+    public static function hash($message, $rounds = self::HASHING_ROUNDS)
+    {
+        if ($rounds === 0) {
+            return hash(self::HASHING_ALGORITHM, $message);
+        }
+        return hash(self::HASHING_ALGORITHM, self::hash($message, $rounds - 1));
+    }
+
+    /**
+     * Signs a message.
+     * @param string $message Message
+     * @param string $secret Shared secret
+     * @param int $rounds Number of rounds
+     * @return string Signature
+     */
+    public static function sign($message, $secret, $rounds = self::HASHING_ROUNDS)
+    {
+        if ($rounds === 0) {
+            return hash_hmac(self::HASHING_ALGORITHM, $message, $secret);
+        }
+        return hash_hmac(self::HASHING_ALGORITHM, self::sign($message, $secret, $rounds - 1), $secret);
     }
 }
 
@@ -144,9 +176,6 @@ class Database
     // Const properties
     private const LENGTH_ID = 32;
     private const SEPARATOR = "\n";
-    // Hashing properties
-    private const HASHING_ALGORITHM = "sha256";
-    private const HASHING_ROUNDS = 16;
 
     /**
      * Database constructor.
@@ -201,7 +230,7 @@ class Database
     {
         // Generate a row ID
         if ($id === null)
-            $id = Utils::random(32);
+            $id = Utils::random(self::LENGTH_ID);
         // Check if the row already exists
         $has_row = $this->hasRow($id);
         if (!$has_row[0]) {
@@ -221,7 +250,7 @@ class Database
     public function createColumn($name)
     {
         // Generate hashed string
-        $hashed = self::hash($name);
+        $hashed = Utils::hash($name);
         // Check if the column already exists
         $has_column = $this->hasColumn($name);
         if (!$has_column[0]) {
@@ -242,7 +271,7 @@ class Database
     public function createLink($row, $link)
     {
         // Generate hashed string
-        $hashed = self::hash($link);
+        $hashed = Utils::hash($link);
         // Check if the link already exists
         $has_link = $this->hasLink($link);
         if (!$has_link[0]) {
@@ -283,7 +312,7 @@ class Database
     public function hasColumn($name)
     {
         // Generate hashed string
-        $hashed = self::hash($name);
+        $hashed = Utils::hash($name);
         // Store path
         $path = $this->directory_columns . DIRECTORY_SEPARATOR . $hashed;
         // Check if path exists and is a directory
@@ -301,13 +330,13 @@ class Database
     public function hasLink($link)
     {
         // Generate hashed string
-        $hashed = self::hash($link);
+        $hashed = Utils::hash($link);
         // Store path
         $path = $this->directory_links . DIRECTORY_SEPARATOR . $hashed;
         // Check if path exists and is a file
         if (file_exists($path) && is_file($path)) {
             // Generate hashed string
-            $hashed = self::hash($link);
+            $hashed = Utils::hash($link);
             // Store path
             $path = $this->directory_links . DIRECTORY_SEPARATOR . $hashed;
             // Read link
@@ -331,7 +360,7 @@ class Database
             $has_column = $this->hasColumn($column);
             if ($has_column[0]) {
                 // Generate hashed string
-                $hashed = self::hash($column);
+                $hashed = Utils::hash($column);
                 // Store path
                 $path = $this->directory_rows . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed;
                 // Check if path exists and is a file
@@ -362,11 +391,11 @@ class Database
         $has_column = $this->hasColumn($column);
         if ($has_column[0]) {
             // Create hashed string
-            $hashed_name = self::hash($column);
+            $hashed_name = Utils::hash($column);
             // Store path
             $value_path = $this->directory_rows . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed_name;
             // Create hashed string
-            $hashed_value = self::hash($value);
+            $hashed_value = Utils::hash($value);
             // Write path
             file_put_contents($value_path, $value);
             // Store new path
@@ -405,12 +434,12 @@ class Database
             $has_column = $this->hasColumn($column);
             if ($has_column[0]) {
                 // Create hashed string
-                $hashed_name = self::hash($column);
+                $hashed_name = Utils::hash($column);
                 // Store path
                 $value_path = $this->directory_rows . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed_name;
                 // Get value & Hash it
                 $value = file_get_contents($value_path);
-                $hashed_value = self::hash($value);
+                $hashed_value = Utils::hash($value);
                 // Remove path
                 unlink($value_path);
                 // Store new path
@@ -447,7 +476,7 @@ class Database
         $isset = $this->isset($row, $column);
         if ($isset[0]) {
             // Generate hashed string
-            $hashed = self::hash($column);
+            $hashed = Utils::hash($column);
             // Store path
             $path = $this->directory_rows . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed;
             // Read path
@@ -470,9 +499,9 @@ class Database
         $has_column = $this->hasColumn($column);
         if ($has_column[0]) {
             // Create hashed string
-            $hashed_name = self::hash($column);
+            $hashed_name = Utils::hash($column);
             // Create hashed string
-            $hashed_value = self::hash($value);
+            $hashed_value = Utils::hash($value);
             // Store new path
             $index_path = $this->directory_columns . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
             // Make sure the index file exists
@@ -485,21 +514,6 @@ class Database
             return [true, $rows];
         }
         return $has_column;
-    }
-
-    /**
-     * Hashes a message.
-     * @param string $message Message
-     * @param int $rounds Number of rounds
-     * @return string Hash
-     */
-    private static function hash($message, $rounds = self::HASHING_ROUNDS)
-    {
-        if ($rounds === 0) {
-            return hash(self::HASHING_ALGORITHM, $message);
-        } else {
-            return hash(self::HASHING_ALGORITHM, self::hash($message, $rounds - 1));
-        }
     }
 }
 
@@ -520,9 +534,6 @@ class Authority
     // Token properties
     private const VALIDITY = 31 * 24 * 60 * 60;
     private const SEPARATOR = ":";
-    // Hashing properties
-    private const HASHING_ALGORITHM = "sha256";
-    private const HASHING_ROUNDS = 1024;
 
     /**
      * Authority constructor.
@@ -600,12 +611,12 @@ class Authority
             $token_object = new stdClass();
             $token_object->contents = $contents;
             $token_object->permissions = $permissions;
-            $token_object->issuer = self::hash($this->issuer);
+            $token_object->issuer = Utils::hash($this->issuer);
             $token_object->expiry = time() + intval($validity);
             // Create token string
             $token_object_string = bin2hex(json_encode($token_object));
             // Calculate signature
-            $token_signature = self::sign($token_object_string, $secret[1]);
+            $token_signature = Utils::sign($token_object_string, $secret[1]);
             // Create parts
             $token_parts = [$token_object_string, $token_signature];
             // Combine all into token
@@ -638,13 +649,13 @@ class Authority
                 $token_object_string = $token_parts[0];
                 $token_signature = $token_parts[1];
                 // Validate signature
-                if (self::sign($token_object_string, $secret[1]) === $token_signature) {
+                if (Utils::sign($token_object_string, $secret[1]) === $token_signature) {
                     // Parse token object
                     $token_object = json_decode(hex2bin($token_object_string));
                     // Validate existence
                     if (isset($token_object->contents) && isset($token_object->permissions) && isset($token_object->issuer) && isset($token_object->expiry)) {
                         // Validate issuer
-                        if ($token_object->issuer === self::hash($this->issuer)) {
+                        if ($token_object->issuer === Utils::hash($this->issuer)) {
                             // Validate expiry
                             if (time() < $token_object->expiry) {
                                 // Validate permissions
@@ -675,40 +686,5 @@ class Authority
         }
         // Fallback error
         return $secret;
-    }
-
-    /**
-     * HMACs a message.
-     * @param string $message Message
-     * @param string $secret Shared secret
-     * @param int $rounds Number of rounds
-     * @return string Signature
-     */
-    private static function sign($message, $secret, $rounds = self::HASHING_ROUNDS)
-    {
-        // Layer > 0 result
-        if ($rounds > 0) {
-            $layer = self::sign($message, $secret, $rounds - 1);
-            $return = hash_hmac(self::HASHING_ALGORITHM, $layer, $secret);
-        } else {
-            // Layer 0 result
-            $return = hash_hmac(self::HASHING_ALGORITHM, $message, $secret);
-        }
-        return $return;
-    }
-
-    /**
-     * Hashes a message.
-     * @param string $message Message
-     * @param int $rounds Number of rounds
-     * @return string Hash
-     */
-    private static function hash($message, $rounds = self::HASHING_ROUNDS)
-    {
-        if ($rounds === 0) {
-            return hash(self::HASHING_ALGORITHM, $message);
-        } else {
-            return hash(self::HASHING_ALGORITHM, self::hash($message, $rounds - 1));
-        }
     }
 }
