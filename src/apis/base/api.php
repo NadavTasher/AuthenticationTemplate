@@ -155,7 +155,7 @@ class Database
      */
     public function __construct($API = API::BASE, $name = "database")
     {
-        $this->directory = API::directory($API) . DIRECTORY_SEPARATOR . $name;
+        $this->directory = API::directory($API) . DIRECTORY_SEPARATOR . basename($name);
         $this->directory_rows = $this->directory . DIRECTORY_SEPARATOR . "rows";
         $this->directory_columns = $this->directory . DIRECTORY_SEPARATOR . "columns";
         $this->directory_links = $this->directory . DIRECTORY_SEPARATOR . "links";
