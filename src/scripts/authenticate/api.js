@@ -152,11 +152,11 @@ class Notifier {
     /**
      * Start the push loop.
      */
-    static init(callback = this.notify) {
+    static init(timeout = 60, callback = this.notify) {
         // Start the interval
         setInterval(() => {
             this.checkout(callback);
-        }, 60 * 1000);
+        }, timeout * 1000);
     }
 
     /**
