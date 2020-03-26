@@ -61,6 +61,10 @@ class Notifier
      */
     public static function notify($id, $message)
     {
+        // Make sure the ID exists
+        if (!self::$database->has_row($id)[0]) {
+            self::$database->create_row($id);
+        }
         // Initialize messages array
         $messages = array();
         // Check the database
@@ -80,6 +84,10 @@ class Notifier
      */
     public static function checkout($id)
     {
+        // Make sure the ID exists
+        if (!self::$database->has_row($id)[0]) {
+            self::$database->create_row($id);
+        }
         // Initialize messages array
         $messages = array();
         // Check the database
