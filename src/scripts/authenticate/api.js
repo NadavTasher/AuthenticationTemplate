@@ -180,13 +180,23 @@ class Notifier {
      * @param message Message
      */
     static notify(message = null) {
+        // Check compatibility
         if ("Notification" in window) {
+            // Create options object
+            let options = {
+                icon: "images/icons/icon.png"
+            };
+            // Check permission
             if (Notification.permission === "granted") {
-                new Notification(message);
+                // Send notification
+                new Notification(message, options);
             } else {
+                // Request permission
                 Notification.requestPermission().then((permission) => {
+                    // Check permission
                     if (permission === "granted") {
-                        new Notification(message);
+                        // Send notification
+                        new Notification(message, options);
                     }
                 });
             }
