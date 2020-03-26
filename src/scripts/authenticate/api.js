@@ -150,7 +150,7 @@ class Authenticate {
 class Notifier {
 
     /**
-     * Start the push loop.
+     * Start the pull loop.
      */
     static init(timeout = 60, callback = this.notify) {
         // Start the interval
