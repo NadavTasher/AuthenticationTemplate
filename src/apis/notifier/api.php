@@ -54,12 +54,13 @@ class Notifier
     }
 
     /**
-     * Notify the ID with a new message.
-     * @param string $id Registration ID
+     * Notify the user with a new message.
+     * @param string $id User ID
+     * @param string $title Title
      * @param string $message Message
      * @return array Results
      */
-    public static function notify($id, $message)
+    public static function notify($id, $title, $message)
     {
         // Make sure the ID exists
         if (!self::$database->hasRow($id)[0]) {
@@ -71,15 +72,20 @@ class Notifier
         if (self::$database->isset($id, self::COLUMN_MESSAGES)[0]) {
             $messages = json_decode(self::$database->get($id, self::COLUMN_MESSAGES)[1]);
         }
+        // Create a new message object
+        $messageObject = new stdClass();
+        $messageObject->title = $title;
+        $messageObject->message = $message;
+        $messageObject->timestamp = time();
         // Push into array
-        array_push($messages, $message);
+        array_push($messages, $messageObject);
         // Set the messages array
         return self::$database->set($id, self::COLUMN_MESSAGES, json_encode($messages));
     }
 
     /**
-     * Fetches the latest messages for the ID and clears the database.
-     * @param string $id Registration ID
+     * Fetches the latest messages for the user and clears the database.
+     * @param string $id User ID
      * @return array Results
      */
     public static function checkout($id)

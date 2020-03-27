@@ -167,8 +167,8 @@ class Notifier {
             if (success) {
                 // Send notifications
                 if (callback !== null) {
-                    for (let message of result) {
-                        callback(message);
+                    for (let notification of result) {
+                        callback(notification.title, notification.message);
                     }
                 }
             }
@@ -177,26 +177,29 @@ class Notifier {
 
     /**
      * Default checkout callback.
+     * @param title Title
      * @param message Message
      */
-    static notify(message = null) {
+    static notify(title = null, message = null) {
         // Check compatibility
         if ("Notification" in window) {
             // Create options object
             let options = {
-                icon: "images/icons/icon.png"
+                body: message,
+                icon: "images/icons/icon.png",
+                badge: "images/icons/icon.png"
             };
             // Check permission
             if (Notification.permission === "granted") {
                 // Send notification
-                new Notification(message, options);
+                new Notification(title, options);
             } else {
                 // Request permission
                 Notification.requestPermission().then((permission) => {
                     // Check permission
                     if (permission === "granted") {
                         // Send notification
-                        new Notification(message, options);
+                        new Notification(title, options);
                     }
                 });
             }
