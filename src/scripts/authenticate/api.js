@@ -182,23 +182,26 @@ class Notifier {
     static notify(notification) {
         // Check compatibility
         if ("Notification" in window) {
+            // Parse object
+            let notificationTitle = notification.title || "No Title";
+            let notificationMessage = notification.message || undefined;
             // Create options object
-            let options = {
-                body: notification.message || undefined,
+            let notificationOptions = {
+                body: notificationMessage,
                 icon: "images/icons/icon.png",
                 badge: "images/icons/icon.png"
             };
             // Check permission
             if (Notification.permission === "granted") {
                 // Send notification
-                new Notification(notification.title, options);
+                new Notification(notificationTitle, notificationOptions);
             } else {
                 // Request permission
                 Notification.requestPermission().then((permission) => {
                     // Check permission
                     if (permission === "granted") {
                         // Send notification
-                        new Notification(notification.title, options);
+                        new Notification(notificationTitle, notificationOptions);
                     }
                 });
             }
