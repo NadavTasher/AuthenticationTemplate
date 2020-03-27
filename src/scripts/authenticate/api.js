@@ -185,7 +185,7 @@ class Notifier {
         if ("Notification" in window) {
             // Create options object
             let options = {
-                body: message !== null ? message : undefined,
+                body: message || undefined,
                 icon: "images/icons/icon.png",
                 badge: "images/icons/icon.png"
             };
