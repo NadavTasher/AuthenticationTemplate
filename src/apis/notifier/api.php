@@ -60,7 +60,7 @@ class Notifier
      * @param string $message Message
      * @return array Results
      */
-    public static function notify($id, $title, $message)
+    public static function notify($id, $title = null, $message = null)
     {
         // Make sure the ID exists
         if (!self::$database->hasRow($id)[0]) {
