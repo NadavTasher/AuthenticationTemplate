@@ -168,7 +168,7 @@ class Notifier {
                 // Send notifications
                 if (callback !== null) {
                     for (let notification of result) {
-                        callback(notification.title, notification.message);
+                        callback(notification);
                     }
                 }
             }
@@ -177,29 +177,28 @@ class Notifier {
 
     /**
      * Default checkout callback.
-     * @param title Title
-     * @param message Message
+     * @param notification Notification
      */
-    static notify(title = null, message = null) {
+    static notify(notification) {
         // Check compatibility
         if ("Notification" in window) {
             // Create options object
             let options = {
-                body: message || undefined,
+                body: notification.message || undefined,
                 icon: "images/icons/icon.png",
                 badge: "images/icons/icon.png"
             };
             // Check permission
             if (Notification.permission === "granted") {
                 // Send notification
-                new Notification(title, options);
+                new Notification(notification.title, options);
             } else {
                 // Request permission
                 Notification.requestPermission().then((permission) => {
                     // Check permission
                     if (permission === "granted") {
                         // Send notification
-                        new Notification(title, options);
+                        new Notification(notification.title, options);
                     }
                 });
             }
