@@ -9,6 +9,8 @@ html {
     /* Sizing */
     height: 100%;
     width: 100%;
+    /* Alignment */
+    align-items: center !important;
 }
 
 body {
@@ -100,7 +102,7 @@ textarea {
     /* Flex */
     flex-direction: row;
     /* Alignment */
-    align-items: center;
+    align-items: stretch;
 }
 
 [row = ""] > *, [row = true] > * {
