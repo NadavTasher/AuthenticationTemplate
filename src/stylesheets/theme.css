@@ -35,6 +35,10 @@ textarea {
     text-align-last: left !important;
 }
 
+[hidden = ""], [hidden = true] {
+    display: none !important;
+}
+
 [text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select, textarea, [row = ""], [row = true], [column = ""], [column = true], div {
     /* Display */
     display: flex;
