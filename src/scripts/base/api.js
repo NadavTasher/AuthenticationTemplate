@@ -377,7 +377,7 @@ class UI {
         // Store view
         let view = this.find(v);
         // Remove all views
-        view.innerHTML = undefined;
+        view.innerHTML = "";
     }
 
 }
