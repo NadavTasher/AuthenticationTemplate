@@ -65,7 +65,7 @@ class Authenticate {
     /**
      * Sends a signup API call and handles the results.
      */
-    static sign_up(callback = null) {
+    static signUp(callback = null) {
         // Hide the inputs
         UI.hide("authenticate-inputs");
         // Change the output message
@@ -77,7 +77,7 @@ class Authenticate {
         }, (success, result) => {
             if (success) {
                 // Call the signin function
-                this.sign_in(callback);
+                this.signIn(callback);
             } else {
                 // Show the inputs
                 UI.show("authenticate-inputs");
@@ -90,7 +90,7 @@ class Authenticate {
     /**
      * Sends a signin API call and handles the results.
      */
-    static sign_in(callback = null) {
+    static signIn(callback = null) {
         // Hide the inputs
         UI.hide("authenticate-inputs");
         // Change the output message
@@ -117,7 +117,7 @@ class Authenticate {
     /**
      * Signs the user out.
      */
-    static sign_out() {
+    static signOut() {
         // Push 'undefined' to the session cookie
         PathStorage.removeItem(AUTHENTICATE_API);
     }
