@@ -17,9 +17,11 @@ include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "authe
 class Notifier
 {
     // API string
-    private const API = "notifier";
+    public const API = "notifier";
+
     // Column names
     private const COLUMN_MESSAGES = "messages";
+
     // Base APIs
     private static Database $database;
 

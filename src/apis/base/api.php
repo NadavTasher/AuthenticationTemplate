@@ -11,7 +11,7 @@
 class API
 {
     // Base API name
-    public const BASE = "base";
+    public const API = "base";
 
     // APIs directory
     private const APIS_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . "..";
@@ -115,8 +115,8 @@ class API
  */
 class Utils
 {
-    private const HASHING_ALGORITHM = "sha256";
     private const HASHING_ROUNDS = 16;
+    private const HASHING_ALGORITHM = "sha256";
 
     /**
      * Creates a random string.
@@ -168,11 +168,13 @@ class Database
 {
     // Root directory
     private string $directory;
+
     // Subdirectories
     private string $directory_rows;
     private string $directory_columns;
     private string $directory_links;
     private string $access_file;
+
     // Const properties
     private const LENGTH_ID = 32;
     private const SEPARATOR = "\n";
@@ -182,7 +184,7 @@ class Database
      * @param string $API API name
      * @param string $name Database name
      */
-    public function __construct($API = API::BASE, $name = "database")
+    public function __construct($API = API::API, $name = "database")
     {
         $this->directory = API::directory($API) . DIRECTORY_SEPARATOR . basename($name);
         $this->directory_rows = $this->directory . DIRECTORY_SEPARATOR . "rows";
@@ -524,13 +526,17 @@ class Authority
 {
     // Root directory
     private string $directory;
+
     // Subdirectories
     private string $secret_file;
     private string $access_file;
+
     // Token issuer
     private string $issuer;
+
     // Lengths
     private const LENGTH_SECRET = 512;
+
     // Token properties
     private const VALIDITY = 31 * 24 * 60 * 60;
     private const SEPARATOR = ":";
@@ -539,7 +545,7 @@ class Authority
      * Authority constructor.
      * @param string $API API name
      */
-    public function __construct($API = API::BASE)
+    public function __construct($API = API::API)
     {
         $this->directory = API::directory($API) . DIRECTORY_SEPARATOR . "authority";
         $this->secret_file = $this->directory . DIRECTORY_SEPARATOR . "secret";
