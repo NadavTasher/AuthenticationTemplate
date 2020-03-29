@@ -543,7 +543,7 @@ class Authority
     {
         $this->API = $API;
         // Create secret
-        $path = Utils::guestDirectory(self::API, $this->API);
+        $path = Utils::guestDirectory(self::API, $this->API) . DIRECTORY_SEPARATOR . "secret.key";
         // Check existence
         if (!file_exists($path)) {
             // Create the secret file
