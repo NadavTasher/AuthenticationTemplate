@@ -74,16 +74,11 @@ class API
             // Parse the APIs
             if (isset($APIs->$API)) {
                 if (isset($APIs->$API->action)) {
-                    if (is_string($APIs->$API->action)) {
-                        // Parse the action
+                    if ((is_string($APIs->$API->action) || is_null($APIs->$API->action)) &&
+                        (is_object($APIs->$API->parameters) || is_null($APIs->$API->parameters))) {
+                        // Parse the parameter
                         $action = $APIs->$API->action;
-                        $action_parameters = new stdClass();
-                        // Parse the parameters
-                        if (isset($APIs->$API->parameters)) {
-                            if (is_object($APIs->$API->parameters)) {
-                                $action_parameters = $APIs->$API->parameters;
-                            }
-                        }
+                        $action_parameters = $APIs->$API->parameters;
                         // Execute the call
                         $action_result = $callback($action, $action_parameters);
                         // Parse the results

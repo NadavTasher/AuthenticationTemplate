@@ -118,8 +118,8 @@ class API {
             if (api !== null) {
                 // Compile API
                 APIs["apis"][api] = {
-                    action: action || "",
-                    parameters: parameters || {}
+                    action: action || null,
+                    parameters: parameters || null
                 };
                 // Compile callback
                 APIs["callbacks"][api] = callback;
