@@ -259,7 +259,7 @@ class Authenticate
         // Check authentication result
         if ($authentication[0]) {
             // Return a success result
-            return self::$authority->issue($id);
+            return self::$authority->issue($id, self::$configuration->permissions->issuing);
         }
         // Fallback result
         return $authentication;
@@ -273,7 +273,7 @@ class Authenticate
     private static function authenticateToken($token)
     {
         // Check if the token is valid
-        $result = self::$authority->validate($token);
+        $result = self::$authority->validate($token, self::$configuration->permissions->validating);
         if ($result[0]) {
             // Token is valid
             return [true, null, $result[1]];
