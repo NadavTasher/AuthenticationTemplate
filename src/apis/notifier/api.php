@@ -43,7 +43,7 @@ class Notifier
         // Init API
         self::init();
         // Return the result
-        return API::handle(Notifier::API, function () {
+        return Base::handle(Notifier::API, function () {
             // Authenticate user
             $userID = Authenticate::handle();
             // Handle checkout

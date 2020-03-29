@@ -16,13 +16,6 @@ class Authenticate
     // API string
     public const API = "authenticate";
 
-    // Configuration properties
-    private const CONFIGURATION_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . "configuration";
-    private const CONFIGURATION_HOOKS_FILE = self::CONFIGURATION_DIRECTORY . DIRECTORY_SEPARATOR . "hooks.json";
-    private const CONFIGURATION_LOCKS_FILE = self::CONFIGURATION_DIRECTORY . DIRECTORY_SEPARATOR . "locks.json";
-    private const CONFIGURATION_LENGTHS_FILE = self::CONFIGURATION_DIRECTORY . DIRECTORY_SEPARATOR . "lengths.json";
-    private const CONFIGURATION_PERMISSIONS_FILE = self::CONFIGURATION_DIRECTORY . DIRECTORY_SEPARATOR . "permissions.json";
-
     // Column names
     private const COLUMN_NAME = "name";
     private const COLUMN_SALT = "salt";
@@ -46,10 +39,10 @@ class Authenticate
     {
         // Load configuration
         self::$configuration = new stdClass();
-        self::$configuration->hooks = json_decode(file_get_contents(self::CONFIGURATION_HOOKS_FILE));
-        self::$configuration->locks = json_decode(file_get_contents(self::CONFIGURATION_LOCKS_FILE));
-        self::$configuration->lengths = json_decode(file_get_contents(self::CONFIGURATION_LENGTHS_FILE));
-        self::$configuration->permissions = json_decode(file_get_contents(self::CONFIGURATION_PERMISSIONS_FILE));
+        self::$configuration->hooks = json_decode(file_get_contents(Utils::hostDirectory(self::API) . DIRECTORY_SEPARATOR . "hooks.json"));
+        self::$configuration->locks = json_decode(file_get_contents(Utils::hostDirectory(self::API) . DIRECTORY_SEPARATOR . "locks.json"));
+        self::$configuration->lengths = json_decode(file_get_contents(Utils::hostDirectory(self::API) . DIRECTORY_SEPARATOR . "lengths.json"));
+        self::$configuration->permissions = json_decode(file_get_contents(Utils::hostDirectory(self::API) . DIRECTORY_SEPARATOR . "permissions.json"));
         // Make sure the database is initiated.
         self::$database = new Database(self::API);
         self::$database->createColumn(self::COLUMN_NAME);
@@ -69,7 +62,7 @@ class Authenticate
         // Init the API
         self::init();
         // Return the result so that other APIs could use it.
-        return API::handle(self::API, function ($action, $parameters) {
+        return Base::handle(self::API, function ($action, $parameters) {
             if (isset(self::$configuration->hooks->$action)) {
                 if (self::$configuration->hooks->$action === true) {
                     if ($action === "authenticate") {
@@ -180,8 +173,8 @@ class Authenticate
                     $id = self::$database->createRow();
                     if ($id[0]) {
                         // Generate salt and hash
-                        $salt = Utils::random(self::$configuration->lengths->salt);
-                        $hash = Utils::hash($password . $salt);
+                        $salt = Utils::randomString(self::$configuration->lengths->salt);
+                        $hash = Utils::hashMessage($password . $salt);
                         // Set user information
                         self::$database->set($id[1], self::COLUMN_NAME, $name);
                         self::$database->set($id[1], self::COLUMN_SALT, $salt);
@@ -223,7 +216,7 @@ class Authenticate
                     $hash = self::$database->get($id, self::COLUMN_HASH);
                     if ($salt[0] && $hash[0]) {
                         // Check password match
-                        if (Utils::hash($password . $salt[1]) === $hash[1]) {
+                        if (Utils::hashMessage($password . $salt[1]) === $hash[1]) {
                             // Return a success result
                             return [true, null];
                         } else {
@@ -295,9 +288,9 @@ class Authenticate
         // Check authentication result
         if ($authentication[0]) {
             // Generate a new session ID
-            $session = Utils::random(self::$configuration->lengths->session);
+            $session = Utils::randomString(self::$configuration->lengths->session);
             // Create a database link with the session's hash
-            $create_link = self::$database->createLink($id, Utils::hash($session));
+            $create_link = self::$database->createLink($id, Utils::hashMessage($session));
             if ($create_link[0]) {
                 return [true, $session];
             }
@@ -316,7 +309,7 @@ class Authenticate
     private static function authenticateSession($session)
     {
         // Check if a link with the session's hash value
-        $has_link = self::$database->hasLink(Utils::hash($session));
+        $has_link = self::$database->hasLink(Utils::hashMessage($session));
         if ($has_link[0]) {
             // Return a success result with a server result of the user's ID
             return [true, null, $has_link[1]];
