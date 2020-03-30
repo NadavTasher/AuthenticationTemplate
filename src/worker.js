@@ -30,7 +30,7 @@ self.addEventListener("fetch", function (event) {
 
 self.addEventListener("message", function (event) {
     // Set the token
-    Authenticate.token = event;
+    Authenticate.token = event.data;
     // Start the pull service
     Pull.init(self.registration);
 });
