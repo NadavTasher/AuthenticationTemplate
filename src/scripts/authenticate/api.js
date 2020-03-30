@@ -48,7 +48,7 @@ class Authenticate {
      * Compiles an authenticated API hook.
      * @param callback Callback
      * @param APIs Inherited APIs
-     * @return API list
+     * @returns *[] API list
      */
     static authenticate(callback = null, APIs = API.hook()) {
         // Check if the session cookie exists
