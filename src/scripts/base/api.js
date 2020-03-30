@@ -104,7 +104,7 @@ class API {
      * @param parameters Parameters
      * @param callback Callback
      * @param APIs API list
-     * @returns *[] API list
+     * @return *[] API list
      */
     static hook(API = null, action = null, parameters = null, callback = null, APIs = []) {
         // Make sure none are null
