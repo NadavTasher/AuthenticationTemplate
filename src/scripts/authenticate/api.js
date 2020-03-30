@@ -11,16 +11,19 @@ const AUTHENTICATE_API = "authenticate";
  */
 class Authenticate {
 
+    static TOKEN = null;
+
     /**
      * Authenticates the user by requiring signup, signin and session validation.
      * @param callback Post authentication callback
      */
     static authentication(callback = null) {
+        // Load the token
+        this.TOKEN = localStorage.getItem(AUTHENTICATE_API);
         // View the authentication panel
         UI.page("authenticate");
         // Check authentication
-        let token = PathStorage.getItem(AUTHENTICATE_API);
-        if (token !== null) {
+        if (this.TOKEN !== null) {
             // Hide the inputs
             UI.hide("authenticate-inputs");
             // Change the output message
@@ -52,11 +55,10 @@ class Authenticate {
      */
     static authenticate(callback = null, APIs = API.hook()) {
         // Check if the session cookie exists
-        let token = PathStorage.getItem(AUTHENTICATE_API);
-        if (token !== null) {
+        if (this.TOKEN !== null) {
             // Compile the API hook
             APIs = API.hook(AUTHENTICATE_API, "authenticate", {
-                token: token
+                token: this.TOKEN
             }, callback, APIs);
         }
         return APIs;
@@ -101,8 +103,8 @@ class Authenticate {
             password: UI.find("authenticate-password").value
         }, (success, result) => {
             if (success) {
-                // Push the session cookie
-                PathStorage.setItem(AUTHENTICATE_API, result);
+                // Push the token
+                localStorage.setItem(AUTHENTICATE_API, this.TOKEN = result);
                 // Call the authentication function
                 this.authentication(callback);
             } else {
@@ -119,7 +121,7 @@ class Authenticate {
      */
     static signOut() {
         // Push 'undefined' to the session cookie
-        PathStorage.removeItem(AUTHENTICATE_API);
+        localStorage.removeItem(AUTHENTICATE_API);
     }
 
     /**
