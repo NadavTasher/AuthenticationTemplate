@@ -12,7 +12,7 @@ if (typeof window !== typeof undefined) {
         // Register worker
         if ("serviceWorker" in navigator) {
             navigator.serviceWorker.register("worker.js", {scope: "./"}).then((registration) => {
-                window.worker = registration;
+                window.worker = registration.active;
             });
         }
         // Callback

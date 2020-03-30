@@ -4,7 +4,7 @@
       <settings>
         <option name="buildCliOptions" value="" />
         <option name="command" value="" />
-        <option name="containerName" value="authenticate-test" />
+        <option name="containerName" value="test" />
         <option name="entrypoint" value="" />
         <option name="imageTag" value="authenticate" />
         <option name="portBindings">
