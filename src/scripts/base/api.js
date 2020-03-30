@@ -41,59 +41,56 @@ class API {
      * @param APIs API list
      */
     static call(endpoint, APIs = []) {
-        // Make sure the APIs list is well structured
-        if (APIs.hasOwnProperty("apis") && APIs.hasOwnProperty("callbacks")) {
-            // Create a form
-            let form = new FormData();
-            // Compile to hook
-            let hook = {};
-            for (let API of APIs) {
-                hook[API.API] = API.request;
-            }
-            // Append the compiled hook as "api"
-            form.append("api", JSON.stringify(hook));
-            // Make sure the device is online
-            if (typeof window === typeof undefined || window.navigator.onLine) {
-                // Perform the request
-                fetch("apis/" + endpoint + "/", {
-                    method: "post",
-                    body: form
-                }).then(response => {
-                    response.text().then((result) => {
-                        // Try to parse the result as JSON
-                        try {
-                            let stack = JSON.parse(result);
-                            // Loop through APIs
-                            for (let API of APIs) {
-                                // Check if the callback really exists
-                                if (API.callback !== null) {
-                                    // Try parsing and calling
-                                    try {
-                                        // Make sure the requested API exists in the result
-                                        if (stack.hasOwnProperty(API.API)) {
-                                            // Store the result
-                                            let layer = stack[API.API];
-                                            // Check the result's integrity
-                                            if (layer.hasOwnProperty("success") && layer.hasOwnProperty("result")) {
-                                                // Call the callback with the result
-                                                API.callback(layer["success"] === true, layer["result"]);
-                                            } else {
-                                                // Call the callback with an error
-                                                API.callback(false, "API parameters not found");
-                                            }
+        // Create a form
+        let form = new FormData();
+        // Compile to hook
+        let hook = {};
+        for (let API of APIs) {
+            hook[API.API] = API.request;
+        }
+        // Append the compiled hook as "api"
+        form.append("api", JSON.stringify(hook));
+        // Make sure the device is online
+        if (typeof window === typeof undefined || window.navigator.onLine) {
+            // Perform the request
+            fetch("apis/" + endpoint + "/", {
+                method: "post",
+                body: form
+            }).then(response => {
+                response.text().then((result) => {
+                    // Try to parse the result as JSON
+                    try {
+                        let stack = JSON.parse(result);
+                        // Loop through APIs
+                        for (let API of APIs) {
+                            // Check if the callback really exists
+                            if (API.callback !== null) {
+                                // Try parsing and calling
+                                try {
+                                    // Make sure the requested API exists in the result
+                                    if (stack.hasOwnProperty(API.API)) {
+                                        // Store the result
+                                        let layer = stack[API.API];
+                                        // Check the result's integrity
+                                        if (layer.hasOwnProperty("success") && layer.hasOwnProperty("result")) {
+                                            // Call the callback with the result
+                                            API.callback(layer["success"] === true, layer["result"]);
                                         } else {
                                             // Call the callback with an error
-                                            API.callback(false, "API not found");
+                                            API.callback(false, "API parameters not found");
                                         }
-                                    } catch (ignored) {
+                                    } else {
+                                        // Call the callback with an error
+                                        API.callback(false, "API not found");
                                     }
+                                } catch (ignored) {
                                 }
                             }
-                        } catch (ignored) {
                         }
-                    });
+                    } catch (ignored) {
+                    }
                 });
-            }
+            });
         }
     }
 
