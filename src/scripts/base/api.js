@@ -10,8 +10,11 @@
 if (typeof window !== typeof undefined) {
     window.prepare = function (callback = null) {
         // Register worker
-        if ("serviceWorker" in navigator)
-            navigator.serviceWorker.register("worker.js", {scope: "./"}).then();
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("worker.js", {scope: "./"}).then((registration) => {
+                window.worker = registration;
+            });
+        }
         // Callback
         if (callback !== null)
             callback();
