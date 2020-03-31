@@ -155,25 +155,28 @@ class Pull {
 
     /**
      * Start the pull loop.
-     * @param registration Registration
+     * @param timeout Timeout
+     * @param callback Callback
      */
-    static init(registration = null) {
+    static init(timeout = 30, callback = this.notify) {
         // Start the interval
         setInterval(() => {
-            this.pull(registration);
-        }, 60 * 1000);
+            this.pull(callback);
+        }, timeout * 1000);
     }
 
     /**
      * Pulls the messages from the server.
-     * @param registration Registration
+     * @param callback Callback
      */
-    static pull(registration = null) {
+    static pull(callback = null) {
         API.send(PULL_API, null, null, (success, result) => {
             if (success) {
                 // Send notifications
-                for (let notification of result) {
-                    this.notify(notification, registration);
+                if (callback !== null) {
+                    for (let notification of result) {
+                        callback(notification);
+                    }
                 }
             }
         }, Authenticate.authenticate());
@@ -182,9 +185,8 @@ class Pull {
     /**
      * Default pull callback.
      * @param notification Notification
-     * @param registration Registration
      */
-    static notify(notification, registration = null) {
+    static notify(notification) {
         // Check compatibility
         if (typeof window === typeof undefined || "Notification" in window) {
             // Parse object
@@ -196,17 +198,19 @@ class Pull {
                 icon: "images/icons/icon.png",
                 badge: "images/icons/icon.png"
             };
-            Notification.requestPermission().then((permission) => {
-                // Check permission
-                if (permission === "granted") {
-                    // Send notification
-                    if (registration === null) {
+            // Check permission
+            if (Notification.permission === "granted") {
+                // Send notification
+                new Notification(notificationTitle, notificationOptions);
+            } else {
+                Notification.requestPermission().then((permission) => {
+                    // Check permission
+                    if (permission === "granted") {
+                        // Send notification
                         new Notification(notificationTitle, notificationOptions);
-                    } else {
-                        registration.showNotification(notificationTitle, notificationOptions).then();
                     }
-                }
-            });
+                });
+            }
         }
     }
 }
