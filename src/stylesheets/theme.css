@@ -3,6 +3,13 @@
  * https://github.com/NadavTasher/BaseTemplate/
  **/
 
+:root {
+    --small: 2.5vh;
+    --normal: 3vh;
+    --large: 4vh;
+    --huge: 6vh;
+}
+
 html {
     /* Positioning */
     position: fixed;
@@ -30,22 +37,18 @@ body {
     background-color: var(--theme);
 }
 
-textarea {
-    text-align: left !important;
-    text-align-last: left !important;
-}
-
 [hidden = ""], [hidden = true] {
     display: none !important;
 }
 
-[text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select, textarea, [row = ""], [row = true], [column = ""], [column = true], div {
+[text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select, [row = ""], [row = true], [column = ""], [column = true], div {
     /* Display */
     display: flex;
     flex-direction: column;
     /* Text */
     color: var(--text);
-    font-size: large;
+    /* Size */
+    font-size: var(--normal);
     font-family: Arial, ArialHebrew, sans-serif;
     /* Text Alignment */
     text-align: center;
@@ -61,10 +64,10 @@ textarea {
     height: auto;
 }
 
-[text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select, textarea {
+[text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select {
     /* Positioning */
     margin: 1vh;
-    padding: 1vh;
+    padding: 1.5vh;
     /* Alignment */
     justify-content: center;
     justify-items: center;
@@ -77,7 +80,27 @@ textarea {
     width: auto;
 }
 
-[input = ""], [input = true], button, input, select, textarea {
+[size = small] {
+    /* Size */
+    font-size: var(--small);
+}
+
+[size = normal] {
+    /* Size */
+    font-size: var(--normal);
+}
+
+[size = large] {
+    /* Size */
+    font-size: var(--large);
+}
+
+[size = huge] {
+    /* Size */
+    font-size: var(--huge);
+}
+
+[input = ""], [input = true], button, input, select {
     transition-duration: 0.2s;
     background-color: var(--bright);
 }

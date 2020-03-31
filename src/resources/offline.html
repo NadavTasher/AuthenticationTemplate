@@ -37,12 +37,21 @@
             max-width: 460px;
         }
 
+        :root {
+            --small: 2.5vh;
+            --normal: 3vh;
+            --large: 4vh;
+            --huge: 6vh;
+        }
+
         html {
             /* Positioning */
             position: fixed;
             /* Sizing */
             height: 100%;
             width: 100%;
+            /* Alignment */
+            align-items: center !important;
         }
 
         body {
@@ -62,18 +71,18 @@
             background-color: var(--theme);
         }
 
-        textarea {
-            text-align: left !important;
-            text-align-last: left !important;
+        [hidden = ""], [hidden = true] {
+            display: none !important;
         }
 
-        [text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select, textarea, [row = ""], [row = true], [column = ""], [column = true], div {
+        [text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select, [row = ""], [row = true], [column = ""], [column = true], div {
             /* Display */
             display: flex;
             flex-direction: column;
             /* Text */
             color: var(--text);
-            font-size: large;
+            /* Size */
+            font-size: var(--normal);
             font-family: Arial, ArialHebrew, sans-serif;
             /* Text Alignment */
             text-align: center;
@@ -89,10 +98,10 @@
             height: auto;
         }
 
-        [text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select, textarea {
+        [text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select {
             /* Positioning */
             margin: 1vh;
-            padding: 1vh;
+            padding: 1.5vh;
             /* Alignment */
             justify-content: center;
             justify-items: center;
@@ -105,7 +114,27 @@
             width: auto;
         }
 
-        [input = ""], [input = true], button, input, select, textarea {
+        [size = small] {
+            /* Size */
+            font-size: var(--small);
+        }
+
+        [size = normal] {
+            /* Size */
+            font-size: var(--normal);
+        }
+
+        [size = large] {
+            /* Size */
+            font-size: var(--large);
+        }
+
+        [size = huge] {
+            /* Size */
+            font-size: var(--huge);
+        }
+
+        [input = ""], [input = true], button, input, select {
             transition-duration: 0.2s;
             background-color: var(--bright);
         }
@@ -134,7 +163,7 @@
             /* Flex */
             flex-direction: row;
             /* Alignment */
-            align-items: center;
+            align-items: stretch;
         }
 
         [row = ""] > *, [row = true] > * {
@@ -149,7 +178,7 @@
     </style>
 </head>
 <body column>
-<p style="font-size: 6vh">Offline</p>
-<p style="font-size: 3vh">Touch to reload</p>
+<p size="huge">Offline</p>
+<p size="normal">Touch to reload</p>
 </body>
 </html>
