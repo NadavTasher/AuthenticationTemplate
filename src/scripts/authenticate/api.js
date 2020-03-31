@@ -33,8 +33,8 @@ class Authenticate {
                 if (success) {
                     // Change the page
                     UI.page("authenticated");
-                    // Send a message to the service worker
-                    window.worker.postMessage(this.token);
+                    // Start the pull service
+                    Pull.init();
                     // Run the callback
                     if (callback !== null) {
                         callback();
