@@ -37,13 +37,6 @@
             max-width: 460px;
         }
 
-        :root {
-            --small: 2.5vh;
-            --normal: 3vh;
-            --large: 4vh;
-            --huge: 6vh;
-        }
-
         html {
             /* Positioning */
             position: fixed;
@@ -62,27 +55,17 @@
             /* Sizing */
             max-height: 100%;
             /* Background */
-            -webkit-background-size: cover;
-            -moz-background-size: cover;
-            -o-background-size: cover;
-            background-size: cover;
-            background-attachment: fixed;
-            background-repeat: no-repeat;
             background-color: var(--theme);
         }
 
-        [hidden = ""], [hidden = true] {
-            display: none !important;
-        }
-
-        [text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select, [row = ""], [row = true], [column = ""], [column = true], div {
+        p, button, input, select, div, body, html {
             /* Display */
             display: flex;
             flex-direction: column;
             /* Text */
             color: var(--text);
             /* Size */
-            font-size: var(--normal);
+            font-size: larger;
             font-family: Arial, ArialHebrew, sans-serif;
             /* Text Alignment */
             text-align: center;
@@ -93,12 +76,8 @@
             outline: none;
         }
 
-        [text = ""], [text = true], a, p {
-            flex-flow: wrap;
-            height: auto;
-        }
 
-        [text = ""], [text = true], a, p, [input = ""], [input = true], button, input, select {
+        p, button, input, select {
             /* Positioning */
             margin: 1vh;
             padding: 1.5vh;
@@ -114,36 +93,21 @@
             width: auto;
         }
 
-        [size = small] {
-            /* Size */
-            font-size: var(--small);
+        p {
+            flex-flow: wrap;
+            height: auto;
         }
 
-        [size = normal] {
-            /* Size */
-            font-size: var(--normal);
-        }
-
-        [size = large] {
-            /* Size */
-            font-size: var(--large);
-        }
-
-        [size = huge] {
-            /* Size */
-            font-size: var(--huge);
-        }
-
-        [input = ""], [input = true], button, input, select {
+        button, input, select {
             transition-duration: 0.2s;
             background-color: var(--bright);
         }
 
-        [input = ""]:hover, [input = true]:hover, button:hover, input:hover, select:hover, textarea:hover {
+        button:hover, input:hover, select:hover, textarea:hover {
             background-color: var(--dark);
         }
 
-        [row = ""], [row = true], [column = ""], [column = true], div {
+        [row = ""], [row = true], [column = ""], [column = true], div, body, html {
             /* Alignment */
             justify-content: center;
             align-content: center;
@@ -171,6 +135,10 @@
             width: 100%;
         }
 
+        [hidden = ""], [hidden = true] {
+            display: none !important;
+        }
+
         *::-webkit-scrollbar {
             display: none;
         }
@@ -178,7 +146,7 @@
     </style>
 </head>
 <body column>
-<p size="huge">Offline</p>
-<p size="normal">Touch to reload</p>
+<p style="font-size: larger;">Offline</p>
+<p style="font-size: large">Touch to reload</p>
 </body>
 </html>
