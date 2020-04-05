@@ -31,7 +31,7 @@ p, button, input, select, div, body, html {
     /* Text */
     color: var(--text);
     /* Size */
-    font-size: larger;
+    font-size: large;
     font-family: Arial, ArialHebrew, sans-serif;
     /* Text Alignment */
     text-align: center;
