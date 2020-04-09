@@ -25,8 +25,8 @@ class Authenticate
     // API mode
     private const TOKENS = true;
 
-    // Configurations
-    private static Configuration $hooks, $locks, $lengths, $permissions;
+    // Configuration
+    private static stdClass $configuration;
 
     // Base APIs
     private static Database $database;
@@ -37,11 +37,12 @@ class Authenticate
      */
     public static function initialize()
     {
-        // Load configurations
-        self::$hooks = new Configuration(self::API, "hooks");
-        self::$locks = new Configuration(self::API, "locks");
-        self::$lengths = new Configuration(self::API, "lengths");
-        self::$permissions = new Configuration(self::API, "permissions");
+        // Load configuration
+        self::$configuration = new stdClass();
+        self::$configuration->hooks = json_decode(file_get_contents(Utility::evaluateFile("hooks.json", self::API)));
+        self::$configuration->locks = json_decode(file_get_contents(Utility::evaluateFile("locks.json", self::API)));
+        self::$configuration->lengths = json_decode(file_get_contents(Utility::evaluateFile("lengths.json", self::API)));
+        self::$configuration->permissions = json_decode(file_get_contents(Utility::evaluateFile("permissions.json", self::API)));
         // Make sure the database is initiated.
         self::$database = new Database(self::API);
         self::$database->createColumn(self::COLUMN_NAME);
@@ -59,8 +60,8 @@ class Authenticate
     {
         // Handle the request
         Base::handle(function ($action, $parameters) {
-            if (self::$hooks->has($action)) {
-                if (self::$hooks->get($action) === true) {
+            if (isset(self::$configuration->hooks->$action)) {
+                if (self::$configuration->hooks->$action === true) {
                     if ($action === "validate") {
                         if (isset($parameters->token)) {
                             if (is_string($parameters->token)) {
@@ -109,7 +110,7 @@ class Authenticate
     {
         if (self::TOKENS) {
             // Authenticate the user using tokens
-            return self::$authority->validate($token, self::$permissions->get("validating"));
+            return self::$authority->validate($token, self::$configuration->permissions->validating);
         } else {
             // Authenticate the user using sessions
             return self::$database->hasLink($token);
@@ -129,12 +130,12 @@ class Authenticate
         // Check for user existence
         if (!self::$database->hasRow($userID)[0]) {
             // Check password length
-            if (strlen($password) >= self::$lengths->get("password")) {
+            if (strlen($password) >= self::$configuration->lengths->password) {
                 // Generate a unique user id
                 if (self::$database->createRow($userID)[0]) {
                     // Generate salt and hash
-                    $salt = Cryptography::random(self::$lengths->get("salt"));
-                    $hash = Cryptography::hash($password . $salt);
+                    $salt = Utility::random(self::$configuration->lengths->salt);
+                    $hash = Utility::hash($password . $salt);
                     // Set user information
                     self::$database->set($userID, self::COLUMN_NAME, $name);
                     self::$database->set($userID, self::COLUMN_SALT, $salt);
@@ -175,18 +176,18 @@ class Authenticate
                         $hash = self::$database->get($userID, self::COLUMN_HASH);
                         if ($hash[0]) {
                             // Check password match
-                            if (Cryptography::hash($password . $salt[1]) === $hash[1]) {
+                            if (Utility::hash($password . $salt[1]) === $hash[1]) {
                                 // Correct credentials
                                 if (self::TOKENS) {
                                     // Issue a new token
-                                    return self::$authority->issue($userID, self::$permissions->get("issuing"));
+                                    return self::$authority->issue($userID, self::$configuration->permissions->issuing);
                                 } else {
                                     // Create a new session
-                                    return self::$database->createLink($userID, Cryptography::random(self::$lengths->get("session")));
+                                    return self::$database->createLink($userID, Utility::random(self::$configuration->lengths->session));
                                 }
                             } else {
                                 // Lock the user
-                                self::$database->set($userID, self::COLUMN_LOCK, strval(time() + self::$locks->get("timeout")));
+                                self::$database->set($userID, self::COLUMN_LOCK, strval(time() + self::$configuration->locks->timeout));
                                 // Return a failure result
                                 return [false, "Wrong password"];
                             }
