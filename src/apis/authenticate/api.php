@@ -102,40 +102,6 @@ class Authenticate
     }
 
     /**
-     * Finds a user's name by its ID.
-     * @param string $id User ID
-     * @return array Results
-     */
-    public static function findName($id)
-    {
-        // Check if the user's row exists
-        if (self::$database->hasRow($id)[0]) {
-            // Retrieve the name value
-            return self::$database->get($id, self::COLUMN_NAME);
-        }
-        // Fallback result
-        return [false, "User doesn't exist"];
-    }
-
-    /**
-     * Finds a user's ID by its name.
-     * @param string $name User Name
-     * @return array Result
-     */
-    public static function findID($name)
-    {
-        $search = self::$database->search(self::COLUMN_NAME, $name);
-        if ($search[0]) {
-            if (count($search[1]) > 0) {
-                return [true, $search[1][0]];
-            }
-            return [false, "User doesn't exist"];
-        }
-        // Fallback result
-        return $search;
-    }
-
-    /**
      * Authenticate a user.
      * @param string $token Token
      * @return array Results
@@ -159,37 +125,33 @@ class Authenticate
      */
     public static function signUp($name, $password)
     {
-        // Check user name
-        $search = self::$database->search(self::COLUMN_NAME, $name);
-        if ($search[0]) {
-            if (count($search[1]) === 0) {
-                // Check password length
-                if (strlen($password) >= self::$configuration->lengths->password) {
-                    // Generate a unique user id
-                    $id = self::$database->createRow();
-                    if ($id[0]) {
-                        // Generate salt and hash
-                        $salt = Utils::randomString(self::$configuration->lengths->salt);
-                        $hash = Utils::hashMessage($password . $salt);
-                        // Set user information
-                        self::$database->set($id[1], self::COLUMN_NAME, $name);
-                        self::$database->set($id[1], self::COLUMN_SALT, $salt);
-                        self::$database->set($id[1], self::COLUMN_HASH, $hash);
-                        self::$database->set($id[1], self::COLUMN_LOCK, strval(0));
-                        // Return a success result
-                        return [true, $id[1]];
-                    }
-                    // Fallback result
-                    return $id;
+        // Create user ID
+        $userID = bin2hex($name);
+        // Check for user existence
+        if (!self::$database->hasRow($userID)[0]) {
+            // Check password length
+            if (strlen($password) >= self::$configuration->lengths->password) {
+                // Generate a unique user id
+                if (self::$database->createRow($userID)[0]) {
+                    // Generate salt and hash
+                    $salt = Utils::randomString(self::$configuration->lengths->salt);
+                    $hash = Utils::hashMessage($password . $salt);
+                    // Set user information
+                    self::$database->set($userID, self::COLUMN_NAME, $name);
+                    self::$database->set($userID, self::COLUMN_SALT, $salt);
+                    self::$database->set($userID, self::COLUMN_HASH, $hash);
+                    self::$database->set($userID, self::COLUMN_LOCK, strval(0));
+                    // Return a success result
+                    return [true, $userID];
                 }
                 // Fallback result
-                return [false, "Password too short"];
+                return [false, "User creation error"];
             }
             // Fallback result
-            return [false, "User already exists"];
+            return [false, "Password too short"];
         }
         // Fallback result
-        return $search;
+        return [false, "User already exists"];
     }
 
     /**
@@ -201,36 +163,40 @@ class Authenticate
     public static function signIn($name, $password)
     {
         // Check if the user exists
-        $id = self::findID($name);
-        if ($id[0]) {
+        $userID = bin2hex($name);
+        if (self::$database->hasRow($userID)[0]) {
             // Retrieve the lock value
-            $lock = self::$database->get($id[1], self::COLUMN_LOCK);
+            $lock = self::$database->get($userID, self::COLUMN_LOCK);
             if ($lock[0]) {
                 // Verify that the user isn't locked
                 if (intval($lock[1]) < time()) {
                     // Retrieve the salt and hash
-                    $salt = self::$database->get($id[1], self::COLUMN_SALT);
-                    $hash = self::$database->get($id[1], self::COLUMN_HASH);
-                    if ($salt[0] && $hash[0]) {
-                        // Check password match
-                        if (Utils::hashMessage($password . $salt[1]) === $hash[1]) {
-                            // Correct credentials
-                            if (self::TOKENS) {
-                                // Issue a new token
-                                return self::$authority->issue($id[1], self::$configuration->permissions->issuing);
+                    $salt = self::$database->get($userID, self::COLUMN_SALT);
+                    if ($salt[0]) {
+                        $hash = self::$database->get($userID, self::COLUMN_HASH);
+                        if ($hash[0]) {
+                            // Check password match
+                            if (Utils::hashMessage($password . $salt[1]) === $hash[1]) {
+                                // Correct credentials
+                                if (self::TOKENS) {
+                                    // Issue a new token
+                                    return self::$authority->issue($userID, self::$configuration->permissions->issuing);
+                                } else {
+                                    // Create a new session
+                                    return self::$database->createLink($userID, Utils::randomString(self::$configuration->lengths->session));
+                                }
                             } else {
-                                // Create a new session
-                                return self::$database->createLink($id[1], Utils::randomString(self::$configuration->lengths->session));
+                                // Lock the user
+                                self::$database->set($userID, self::COLUMN_LOCK, strval(time() + self::$configuration->locks->timeout));
+                                // Return a failure result
+                                return [false, "Wrong password"];
                             }
-                        } else {
-                            // Lock the user
-                            self::$database->set($id, self::COLUMN_LOCK, strval(time() + self::$configuration->lock->timeout));
-                            // Return a failure result
-                            return [false, "Wrong password"];
                         }
+                        // Fallback result
+                        return $hash;
                     }
                     // Fallback result
-                    return [false, "Internal error"];
+                    return $salt;
                 }
                 // Fallback result
                 return [false, "User is locked"];
@@ -239,7 +205,7 @@ class Authenticate
             return $lock;
         }
         // Fallback result
-        return $id;
+        return [false, "User does not exist"];
     }
 }
 

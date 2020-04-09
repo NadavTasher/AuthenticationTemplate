@@ -168,7 +168,6 @@ class Database
     /**
      * Database constructor.
      * @param string $API API name
-     * @param string $name Database name
      */
     public function __construct($API = Base::API)
     {
