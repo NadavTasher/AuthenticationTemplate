@@ -70,7 +70,7 @@ class Authenticate
                             return [false, "Invalid parameters"];
                         }
                         return [false, "Missing parameters"];
-                    } else if ($action === "signin") {
+                    } else if ($action === "signIn") {
                         // Authenticate the user using the password, return the new session
                         if (isset($parameters->name) &&
                             isset($parameters->password)) {
@@ -81,7 +81,7 @@ class Authenticate
                             return [false, "Invalid parameters"];
                         }
                         return [false, "Missing parameters"];
-                    } else if ($action === "signup") {
+                    } else if ($action === "signUp") {
                         // Create a new user
                         if (isset($parameters->name) &&
                             isset($parameters->password)) {

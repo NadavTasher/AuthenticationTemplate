@@ -58,7 +58,7 @@ class Authenticate {
         // Change the output message
         this.output("Hold on - Signing you up...");
         // Send the API call
-        API.call(AUTHENTICATE_API, "signup", {
+        API.call(AUTHENTICATE_API, "signUp", {
             name: UI.find("authenticate-name").value,
             password: UI.find("authenticate-password").value
         }, (status, result) => {
@@ -83,7 +83,7 @@ class Authenticate {
         // Change the output message
         this.output("Hold on - Signing you in...");
         // Send the API call
-        API.call(AUTHENTICATE_API, "signin", {
+        API.call(AUTHENTICATE_API, "signIn", {
             name: UI.find("authenticate-name").value,
             password: UI.find("authenticate-password").value
         }, (status, result) => {
