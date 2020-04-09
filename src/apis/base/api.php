@@ -61,14 +61,10 @@ class Base
 }
 
 /**
- * Base API for general functions.
+ * Base API for storage functions.
  */
-class Utils
+class Storage
 {
-    // Hashing properties
-    private const HASHING_ROUNDS = 16;
-    private const HASHING_ALGORITHM = "sha256";
-
     // Directory properties
     private const DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "files";
 
@@ -77,7 +73,7 @@ class Utils
      * @param string $API API
      * @return string Directory
      */
-    public static function hostDirectory($API = Base::API)
+    public static function hostDirectory($API)
     {
         // Create the data directory path
         $directory = self::DIRECTORY . DIRECTORY_SEPARATOR . basename($API);
@@ -90,12 +86,23 @@ class Utils
     }
 
     /**
+     * Creates a host file for an API and a name.
+     * @param string $API API
+     * @param string $file File name
+     * @return string File
+     */
+    public static function hostFile($API, $file)
+    {
+        return self::hostDirectory($API) . DIRECTORY_SEPARATOR . basename($file);
+    }
+
+    /**
      * Creates a guest directory for an API.
      * @param string $hostAPI Host API
      * @param string $guestAPI Guest API
      * @return string Directory
      */
-    public static function guestDirectory($hostAPI = Base::API, $guestAPI = Base::API)
+    public static function guestDirectory($hostAPI, $guestAPI)
     {
         // Create the data directory path
         $directory = self::hostDirectory($hostAPI) . DIRECTORY_SEPARATOR . basename($guestAPI);
@@ -108,14 +115,36 @@ class Utils
     }
 
     /**
+     * Creates a host file for an API and a name.
+     * @param string $hostAPI Host API
+     * @param string $guestAPI Guest API
+     * @param string $file File name
+     * @return string File
+     */
+    public static function guestFile($hostAPI, $guestAPI, $file)
+    {
+        return self::guestDirectory($hostAPI, $guestAPI) . DIRECTORY_SEPARATOR . basename($file);
+    }
+}
+
+/**
+ * Base API for cryptography functions.
+ */
+class Cryptography
+{
+    // Hashing properties
+    private const HASHING_ROUNDS = 16;
+    private const HASHING_ALGORITHM = "sha256";
+
+    /**
      * Creates a random string.
      * @param int $length String length
      * @return string String
      */
-    public static function randomString($length = 0)
+    public static function random($length = 0)
     {
         if ($length > 0) {
-            return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . self::randomString($length - 1);
+            return str_shuffle("0123456789abcdefghijklmnopqrstuvwxyz")[0] . self::random($length - 1);
         }
         return "";
     }
@@ -126,12 +155,12 @@ class Utils
      * @param int $rounds Number of rounds
      * @return string Hash
      */
-    public static function hashMessage($message, $rounds = self::HASHING_ROUNDS)
+    public static function hash($message, $rounds = self::HASHING_ROUNDS)
     {
         if ($rounds === 0) {
             return hash(self::HASHING_ALGORITHM, $message);
         }
-        return hash(self::HASHING_ALGORITHM, self::hashMessage($message, $rounds - 1));
+        return hash(self::HASHING_ALGORITHM, self::hash($message, $rounds - 1));
     }
 
     /**
@@ -141,12 +170,12 @@ class Utils
      * @param int $rounds Number of rounds
      * @return string Signature
      */
-    public static function signMessage($message, $secret, $rounds = self::HASHING_ROUNDS)
+    public static function sign($message, $secret, $rounds = self::HASHING_ROUNDS)
     {
         if ($rounds === 0) {
             return hash_hmac(self::HASHING_ALGORITHM, $message, $secret);
         }
-        return hash_hmac(self::HASHING_ALGORITHM, self::signMessage($message, $secret, $rounds - 1), $secret);
+        return hash_hmac(self::HASHING_ALGORITHM, self::sign($message, $secret, $rounds - 1), $secret);
     }
 }
 
@@ -172,23 +201,16 @@ class Database
     public function __construct($API = Base::API)
     {
         $this->API = $API;
-    }
-
-    /**
-     * Creates and returns a data path.
-     * @param string $subdirectory Directory name
-     * @return string Path
-     */
-    private function directory($subdirectory)
-    {
-        // Append the subdirectory name
-        $directory = Utils::guestDirectory(self::API, $this->API) . DIRECTORY_SEPARATOR . basename($subdirectory);
-        // Make sure the directory exists
-        if (!file_exists($directory)) {
+        // Create directories
+        if (!file_exists($directory = Storage::guestFile(self::API, $this->API, self::ROWS))) {
             mkdir($directory);
         }
-        // Return the path
-        return $directory;
+        if (!file_exists($directory = Storage::guestFile(self::API, $this->API, self::COLUMNS))) {
+            mkdir($directory);
+        }
+        if (!file_exists($directory = Storage::guestFile(self::API, $this->API, self::LINKS))) {
+            mkdir($directory);
+        }
     }
 
     /**
@@ -200,13 +222,13 @@ class Database
     {
         // Generate a row ID
         if ($id === null) {
-            $id = Utils::randomString(self::LENGTH);
+            $id = Cryptography::random(self::LENGTH);
         }
         // Check if the row already exists
         $has_row = $this->hasRow($id);
         if (!$has_row[0]) {
             // Create row directory
-            mkdir($this->directory(self::ROWS) . DIRECTORY_SEPARATOR . $id);
+            mkdir(Storage::guestFile(self::API, $this->API, self::ROWS) . DIRECTORY_SEPARATOR . $id);
             // Return result
             return [true, $id];
         }
@@ -221,12 +243,12 @@ class Database
     public function createColumn($name)
     {
         // Generate hashed string
-        $hashed = Utils::hashMessage($name);
+        $hashed = Cryptography::hash($name);
         // Check if the column already exists
         $has_column = $this->hasColumn($name);
         if (!$has_column[0]) {
             // Create column directory
-            mkdir($this->directory(self::COLUMNS) . DIRECTORY_SEPARATOR . $hashed);
+            mkdir(Storage::guestFile(self::API, $this->API, self::COLUMNS) . DIRECTORY_SEPARATOR . $hashed);
             // Return result
             return [true, $name];
         }
@@ -242,7 +264,7 @@ class Database
     public function createLink($row, $link)
     {
         // Generate hashed string
-        $hashed = Utils::hashMessage($link);
+        $hashed = Cryptography::hash($link);
         // Check if the link already exists
         $has_link = $this->hasLink($link);
         if (!$has_link[0]) {
@@ -250,7 +272,7 @@ class Database
             $has_row = $this->hasRow($row);
             if ($has_row[0]) {
                 // Generate link file
-                file_put_contents($this->directory(self::LINKS) . DIRECTORY_SEPARATOR . $hashed, $row);
+                file_put_contents(Storage::guestFile(self::API, $this->API, self::LINKS) . DIRECTORY_SEPARATOR . $hashed, $row);
                 // Return result
                 return [true, $link];
             }
@@ -267,7 +289,7 @@ class Database
     public function hasRow($id)
     {
         // Store path
-        $path = $this->directory(self::ROWS) . DIRECTORY_SEPARATOR . $id;
+        $path = Storage::guestFile(self::API, $this->API, self::ROWS) . DIRECTORY_SEPARATOR . $id;
         // Check if path exists and is a directory
         if (file_exists($path) && is_dir($path)) {
             return [true, $id];
@@ -283,9 +305,9 @@ class Database
     public function hasColumn($name)
     {
         // Generate hashed string
-        $hashed = Utils::hashMessage($name);
+        $hashed = Cryptography::hash($name);
         // Store path
-        $path = $this->directory(self::COLUMNS) . DIRECTORY_SEPARATOR . $hashed;
+        $path = Storage::guestFile(self::API, $this->API, self::COLUMNS) . DIRECTORY_SEPARATOR . $hashed;
         // Check if path exists and is a directory
         if (file_exists($path) && is_dir($path)) {
             return [true, $name];
@@ -301,9 +323,9 @@ class Database
     public function hasLink($link)
     {
         // Generate hashed string
-        $hashed = Utils::hashMessage($link);
+        $hashed = Cryptography::hash($link);
         // Store path
-        $path = $this->directory(self::LINKS) . DIRECTORY_SEPARATOR . $hashed;
+        $path = Storage::guestFile(self::API, $this->API, self::LINKS) . DIRECTORY_SEPARATOR . $hashed;
         // Check if path exists and is a file
         if (file_exists($path) && is_file($path)) {
             // Read link
@@ -327,9 +349,9 @@ class Database
             $has_column = $this->hasColumn($column);
             if ($has_column[0]) {
                 // Generate hashed string
-                $hashed = Utils::hashMessage($column);
+                $hashed = Cryptography::hash($column);
                 // Store path
-                $path = $this->directory(self::ROWS) . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed;
+                $path = Storage::guestFile(self::API, $this->API, self::ROWS) . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed;
                 // Check if path exists and is a file
                 if (file_exists($path) && is_file($path)) {
                     return [true, null];
@@ -358,15 +380,15 @@ class Database
         $has_column = $this->hasColumn($column);
         if ($has_column[0]) {
             // Create hashed string
-            $hashed_name = Utils::hashMessage($column);
+            $hashed_name = Cryptography::hash($column);
             // Store path
-            $value_path = $this->directory(self::ROWS) . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed_name;
+            $value_path = Storage::guestFile(self::API, $this->API, self::ROWS) . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed_name;
             // Create hashed string
-            $hashed_value = Utils::hashMessage($value);
+            $hashed_value = Cryptography::hash($value);
             // Write path
             file_put_contents($value_path, $value);
             // Store new path
-            $index_path = $this->directory(self::COLUMNS) . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
+            $index_path = Storage::guestFile(self::API, $this->API, self::COLUMNS) . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
             // Create rows array
             $rows = array();
             // Make sure the index file exists
@@ -401,16 +423,16 @@ class Database
             $has_column = $this->hasColumn($column);
             if ($has_column[0]) {
                 // Create hashed string
-                $hashed_name = Utils::hashMessage($column);
+                $hashed_name = Cryptography::hash($column);
                 // Store path
-                $value_path = $this->directory(self::ROWS) . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed_name;
+                $value_path = Storage::guestFile(self::API, $this->API, self::ROWS) . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed_name;
                 // Get value & Hash it
                 $value = file_get_contents($value_path);
-                $hashed_value = Utils::hashMessage($value);
+                $hashed_value = Cryptography::hash($value);
                 // Remove path
                 unlink($value_path);
                 // Store new path
-                $index_path = $this->directory(self::COLUMNS) . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
+                $index_path = Storage::guestFile(self::API, $this->API, self::COLUMNS) . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
                 // Make sure the index file exists
                 if (file_exists($index_path) && is_file($index_path)) {
                     // Read contents
@@ -443,9 +465,9 @@ class Database
         $isset = $this->isset($row, $column);
         if ($isset[0]) {
             // Generate hashed string
-            $hashed = Utils::hashMessage($column);
+            $hashed = Cryptography::hash($column);
             // Store path
-            $path = $this->directory(self::ROWS) . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed;
+            $path = Storage::guestFile(self::API, $this->API, self::ROWS) . DIRECTORY_SEPARATOR . $row . DIRECTORY_SEPARATOR . $hashed;
             // Read path
             return [true, file_get_contents($path)];
         }
@@ -466,11 +488,11 @@ class Database
         $has_column = $this->hasColumn($column);
         if ($has_column[0]) {
             // Create hashed string
-            $hashed_name = Utils::hashMessage($column);
+            $hashed_name = Cryptography::hash($column);
             // Create hashed string
-            $hashed_value = Utils::hashMessage($value);
+            $hashed_value = Cryptography::hash($value);
             // Store new path
-            $index_path = $this->directory(self::COLUMNS) . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
+            $index_path = Storage::guestFile(self::API, $this->API, self::COLUMNS) . DIRECTORY_SEPARATOR . $hashed_name . DIRECTORY_SEPARATOR . $hashed_value;
             // Make sure the index file exists
             if (file_exists($index_path) && is_file($index_path)) {
                 // Read contents
@@ -481,6 +503,96 @@ class Database
             return [true, $rows];
         }
         return $has_column;
+    }
+}
+
+/**
+ * Base API for managing configurations.
+ */
+class Configuration
+{
+    // Constants
+    public const API = "configuration";
+
+    // Guest API
+    private string $API;
+
+    // Configuration name
+    private string $configuration;
+
+    /**
+     * Configuration constructor.
+     * @param string $API API name
+     * @param string $configuration Configuration name
+     */
+    public function __construct($API = Base::API, $configuration = "default")
+    {
+        $this->API = $API;
+        $this->configuration = basename($configuration);
+    }
+
+    /**
+     * Checks if the configuration has a property.
+     * @param string $property Property
+     * @return bool Exists
+     */
+    public function has($property)
+    {
+        return isset($this->load()->$property);
+    }
+
+    /**
+     * Sets a property.
+     * @param string $property Name
+     * @param mixed $value Value
+     */
+    public function set($property, $value = null)
+    {
+        $configuration = $this->load();
+        $configuration->$property = $value;
+        $this->unload($configuration);
+    }
+
+    /**
+     * Gets a property.
+     * @param string $property Name
+     * @return mixed Value
+     */
+    public function get($property)
+    {
+        if ($this->has($property))
+            return $this->load()->$property;
+        return null;
+    }
+
+    /**
+     * Loads the configuration.
+     * @return stdClass Configuration
+     */
+    private function load()
+    {
+        // Default value
+        $configuration = new stdClass();
+        // Find file
+        $file = Storage::guestFile(self::API, $this->API, $this->configuration . ".json");
+        // Check if file exists
+        if (file_exists($file)) {
+            $configuration = json_decode(file_get_contents($file));
+        }
+        // Return the configuration
+        return $configuration;
+    }
+
+    /**
+     * Saves the  configuration.
+     * @param stdClass $configuration Configuration
+     */
+    private function unload($configuration)
+    {
+        // Find file
+        $file = Storage::guestFile(self::API, $this->API, $this->configuration . ".json");
+        // Write configuration
+        file_put_contents($file, json_encode($configuration));
     }
 }
 
@@ -510,11 +622,11 @@ class Authority
     {
         $this->API = $API;
         // Create secret
-        $path = Utils::guestDirectory(self::API, $this->API) . DIRECTORY_SEPARATOR . "secret.key";
+        $path = Storage::guestFile(self::API, $this->API, "secret.key");
         // Check existence
         if (!file_exists($path)) {
             // Create the secret file
-            file_put_contents($path, Utils::randomString(self::LENGTH));
+            file_put_contents($path, Cryptography::random(self::LENGTH));
         }
         // Read secret
         $this->secret = file_get_contents($path);
@@ -533,12 +645,12 @@ class Authority
         $token_object = new stdClass();
         $token_object->contents = $contents;
         $token_object->permissions = $permissions;
-        $token_object->issuer = Utils::hashMessage($this->API);
+        $token_object->issuer = Cryptography::hash($this->API);
         $token_object->expiry = time() + intval($validity);
         // Create token string
         $token_object_string = bin2hex(json_encode($token_object));
         // Calculate signature
-        $token_signature = Utils::signMessage($token_object_string, $this->secret);
+        $token_signature = Cryptography::sign($token_object_string, $this->secret);
         // Create parts
         $token_parts = [$token_object_string, $token_signature];
         // Combine all into token
@@ -564,13 +676,13 @@ class Authority
             $token_object_string = $token_parts[0];
             $token_signature = $token_parts[1];
             // Validate signature
-            if (Utils::signMessage($token_object_string, $this->secret) === $token_signature) {
+            if (Cryptography::sign($token_object_string, $this->secret) === $token_signature) {
                 // Parse token object
                 $token_object = json_decode(hex2bin($token_object_string));
                 // Validate existence
                 if (isset($token_object->contents) && isset($token_object->permissions) && isset($token_object->issuer) && isset($token_object->expiry)) {
                     // Validate issuer
-                    if ($token_object->issuer === Utils::hashMessage($this->API)) {
+                    if ($token_object->issuer === Cryptography::hash($this->API)) {
                         // Validate expiry
                         if (time() < $token_object->expiry) {
                             // Validate permissions
