@@ -229,7 +229,9 @@ class UI {
                     // Replace parameters
                     for (let key in parameters) {
                         if (key in parameters) {
-                            created.innerHTML = created.innerHTML.replace("${" + key + "}", parameters[key]);
+                            let search = "${" + key + "}";
+                            while (created.innerHTML.includes(search))
+                                created.innerHTML = created.innerHTML.replace(search, parameters[key]);
                         }
                     }
                     // Return created element
