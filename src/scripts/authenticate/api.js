@@ -153,7 +153,7 @@ class Pull {
      * @param callback Callback
      */
     static pull(callback = null) {
-        API.send(PULL_API, null, {
+        API.call(PULL_API, null, {
             token: Authenticate.token
         }, (status, result) => {
             if (status) {
