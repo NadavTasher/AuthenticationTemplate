@@ -217,29 +217,22 @@ class UI {
      */
     static create(template, parameters = {}) {
         // Find the template
-        let templateElements = document.getElementsByTagName("template");
-        // Find the template
-        for (let templateElement of templateElements) {
-            if (templateElement.getAttribute("name").toLowerCase() === template.toLowerCase()) {
-                // Create the element
-                let created = document.createElement("div");
-                // Add the HTML
-                let html = templateElement.innerHTML;
-                // Replace parameters
-                for (let key in parameters) {
-                    if (key in parameters) {
-                        let search = "${" + key + "}";
-                        while (html.includes(search))
-                            html = html.replace(search, parameters[key]);
-                    }
-                }
-                created.innerHTML = html;
-                // Return created element
-                return created.children[0];
+        let templateElement = this.find(template);
+        // Create the element
+        let created = document.createElement("div");
+        // Add the HTML
+        let html = templateElement.innerHTML;
+        // Replace parameters
+        for (let key in parameters) {
+            if (key in parameters) {
+                let search = "${" + key + "}";
+                while (html.includes(search))
+                    html = html.replace(search, parameters[key]);
             }
         }
-        // Result default undefined
-        return undefined;
+        created.innerHTML = html;
+        // Return created element
+        return created.children[0];
     }
 
 }
