@@ -211,11 +211,11 @@ class UI {
     }
 
     /**
-     * Finds a template and creates a clone of it.
+     * Finds a template and populates a clone of it.
      * @param template Template name
      * @param parameters Cloning parameters
      */
-    static create(template, parameters = {}) {
+    static populate(template, parameters = {}) {
         // Find the template
         let templateElement = this.find(template);
         // Create the element
