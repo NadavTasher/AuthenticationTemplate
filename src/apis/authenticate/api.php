@@ -109,8 +109,10 @@ class Authenticate
     public static function validate($token)
     {
         if (self::TOKENS) {
+            // Create a combined permissions list
+            $permissions = self::$configuration->permissions->validating;
             // Authenticate the user using tokens
-            return self::$authority->validate($token, self::$configuration->permissions->validating);
+            return self::$authority->validate($token, $permissions);
         } else {
             // Authenticate the user using sessions
             return self::$database->hasLink($token);
@@ -179,8 +181,10 @@ class Authenticate
                             if (Utility::hash($password . $salt[1]) === $hash[1]) {
                                 // Correct credentials
                                 if (self::TOKENS) {
+                                    // Create a combined permissions list
+                                    $permissions = self::$configuration->permissions->issuing;
                                     // Issue a new token
-                                    return self::$authority->issue($userID, self::$configuration->permissions->issuing);
+                                    return self::$authority->issue($userID, $permissions);
                                 } else {
                                     // Create a new session
                                     return self::$database->createLink($userID, Utility::random(self::$configuration->lengths->session));
