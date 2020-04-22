@@ -219,20 +219,26 @@ class UI {
         // Find the template
         let templateElement = this.find(template);
         // Create the element
-        let created = document.createElement("div");
+        let created = templateElement.cloneNode(true);
         // Add the HTML
-        let html = templateElement.innerHTML;
+        let html = created.innerHTML;
         // Replace parameters
         for (let key in parameters) {
             if (key in parameters) {
                 let search = "${" + key + "}";
+                let value = parameters[key];
+                // Sanitize value
+                let sanitizer = document.createElement("p");
+                sanitizer.innerText = value;
+                value = sanitizer.innerHTML;
+                // Replace
                 while (html.includes(search))
-                    html = html.replace(search, parameters[key]);
+                    html = html.replace(search, value);
             }
         }
         created.innerHTML = html;
         // Return created element
-        return created.children[0];
+        return created.content;
     }
 
 }
