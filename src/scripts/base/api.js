@@ -65,63 +65,6 @@ class API {
 }
 
 /**
- * Base API for token validation.
- */
-class Authority {
-
-    /**
-     * Validates a given token and return its contents.
-     * @param token Token
-     * @param permissions Permissions array
-     */
-    static validate(token, permissions = []) {
-        // Split the token
-        let token_parts = token.split(":");
-        // Make sure the token is two parts
-        if (token_parts.length === 2) {
-            // Parse object
-            let token_object = JSON.parse(this.hex2bin(token_parts[0]));
-            // Validate structure
-            if (token_object.hasOwnProperty("contents") && token_object.hasOwnProperty("permissions") && token_object.hasOwnProperty("issuer") && token_object.hasOwnProperty("expiry")) {
-                // Validate time
-                if (Math.floor(Date.now() / 1000) < token_object.expiry) {
-                    // Validate permissions
-                    for (let permission of permissions) {
-                        // Make sure permission exists
-                        if (!token_object.permissions.includes(permission)) {
-                            // Fallback error
-                            return [false, "Insufficient token permissions"];
-                        }
-                    }
-                    // Return token
-                    return [true, token_object.contents];
-                }
-                // Fallback error
-                return [false, "Invalid token expiry"];
-            }
-            // Fallback error
-            return [false, "Invalid token structure"];
-        }
-        // Fallback error
-        return [false, "Invalid token format"];
-    }
-
-    /**
-     * Converts a hexadecimal string to a raw byte string.
-     * @param hexadecimal Hexadecimal string
-     * @return {string} String
-     */
-    static hex2bin(hexadecimal) {
-        let string = "";
-        for (let n = 0; n < hexadecimal.length; n += 2) {
-            string += String.fromCharCode(parseInt(hexadecimal.substr(n, 2), 16));
-        }
-        return string;
-    }
-
-}
-
-/**
  * Base API for creating the UI.
  */
 class UI {
