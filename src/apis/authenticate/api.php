@@ -17,7 +17,6 @@ class Authenticate
     public const API = "authenticate";
 
     // Column names
-    private const COLUMN_NAME = "name";
     private const COLUMN_SALT = "salt";
     private const COLUMN_HASH = "hash";
     private const COLUMN_LOCK = "lock";
@@ -45,7 +44,6 @@ class Authenticate
         self::$configuration->permissions = json_decode(file_get_contents(Utility::evaluateFile("permissions.json", self::API)));
         // Make sure the database is initiated.
         self::$database = new Database(self::API);
-        self::$database->createColumn(self::COLUMN_NAME);
         self::$database->createColumn(self::COLUMN_SALT);
         self::$database->createColumn(self::COLUMN_HASH);
         self::$database->createColumn(self::COLUMN_LOCK);
@@ -139,7 +137,6 @@ class Authenticate
                     $salt = Utility::random(self::$configuration->lengths->salt);
                     $hash = Utility::hash($password . $salt);
                     // Set user information
-                    self::$database->set($userID, self::COLUMN_NAME, $name);
                     self::$database->set($userID, self::COLUMN_SALT, $salt);
                     self::$database->set($userID, self::COLUMN_HASH, $hash);
                     self::$database->set($userID, self::COLUMN_LOCK, strval(0));
