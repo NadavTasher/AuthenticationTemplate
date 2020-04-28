@@ -11,7 +11,7 @@
           <list>
             <DockerPortBindingImpl>
               <option name="containerPort" value="80" />
-              <option name="hostPort" value="8000" />
+              <option name="hostPort" value="8010" />
             </DockerPortBindingImpl>
           </list>
         </option>

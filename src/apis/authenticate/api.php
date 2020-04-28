@@ -21,9 +21,6 @@ class Authenticate
     private const COLUMN_HASH = "hash";
     private const COLUMN_LOCK = "lock";
 
-    // API mode
-    private const TOKENS = true;
-
     // Configuration
     private static stdClass $configuration;
 
@@ -39,14 +36,10 @@ class Authenticate
         // Load configuration
         self::$configuration = new stdClass();
         self::$configuration->hooks = json_decode(file_get_contents(Utility::evaluateFile("hooks.json", self::API)));
-        self::$configuration->locks = json_decode(file_get_contents(Utility::evaluateFile("locks.json", self::API)));
         self::$configuration->lengths = json_decode(file_get_contents(Utility::evaluateFile("lengths.json", self::API)));
         self::$configuration->permissions = json_decode(file_get_contents(Utility::evaluateFile("permissions.json", self::API)));
         // Make sure the database is initiated.
         self::$database = new Database(self::API);
-        self::$database->createColumn(self::COLUMN_SALT);
-        self::$database->createColumn(self::COLUMN_HASH);
-        self::$database->createColumn(self::COLUMN_LOCK);
         // Make sure the authority is set-up
         self::$authority = new Authority(self::API);
     }
@@ -61,35 +54,26 @@ class Authenticate
             if (isset(self::$configuration->hooks->$action)) {
                 if (self::$configuration->hooks->$action === true) {
                     if ($action === "validate") {
-                        if (isset($parameters->token)) {
-                            if (is_string($parameters->token)) {
-                                return self::validate($parameters->token);
-                            }
-                            return [false, "Invalid parameters"];
+                        if (isset($parameters->token) &&
+                            is_string($parameters->token)) {
+                            return self::validate($parameters->token);
                         }
-                        return [false, "Missing parameters"];
+                        return [false, "Parameter error"];
                     } else if ($action === "signIn") {
                         // Authenticate the user using the password, return the new session
                         if (isset($parameters->name) &&
-                            isset($parameters->password)) {
-                            if (is_string($parameters->name) &&
-                                is_string($parameters->password)) {
-                                return self::signIn($parameters->name, $parameters->password);
-                            }
-                            return [false, "Invalid parameters"];
+                            isset($parameters->password) &&
+                            is_string($parameters->name) &&
+                            is_string($parameters->password)) {
+                            return self::signIn($parameters->name, $parameters->password);
                         }
-                        return [false, "Missing parameters"];
+                        return [false, "Parameter error"];
                     } else if ($action === "signUp") {
                         // Create a new user
-                        if (isset($parameters->name) &&
-                            isset($parameters->password)) {
-                            if (is_string($parameters->name) &&
-                                is_string($parameters->password)) {
-                                return self::signUp($parameters->name, $parameters->password);
-                            }
-                            return [false, "Invalid parameters"];
+                        if (isset($parameters->name) && isset($parameters->password) && is_string($parameters->name) && is_string($parameters->password)) {
+                            return self::signUp($parameters->name, $parameters->password);
                         }
-                        return [false, "Missing parameters"];
+                        return [false, "Parameter error"];
                     }
                     return [false, "Unhandled hook"];
                 }
@@ -106,15 +90,10 @@ class Authenticate
      */
     public static function validate($token)
     {
-        if (self::TOKENS) {
-            // Create a combined permissions list
-            $permissions = self::$configuration->permissions->validating;
-            // Authenticate the user using tokens
-            return self::$authority->validate($token, $permissions);
-        } else {
-            // Authenticate the user using sessions
-            return self::$database->hasLink($token);
-        }
+        // Create a combined permissions list
+        $permissions = self::$configuration->permissions->validating;
+        // Authenticate the user using tokens
+        return self::$authority->validate($token, $permissions);
     }
 
     /**
@@ -125,32 +104,32 @@ class Authenticate
      */
     public static function signUp($name, $password)
     {
-        // Create user ID
-        $userID = bin2hex($name);
-        // Check for user existence
-        if (!self::$database->hasRow($userID)[0]) {
-            // Check password length
+        // Validate inputs
+        if (strlen($name) >= self::$configuration->lengths->name) {
             if (strlen($password) >= self::$configuration->lengths->password) {
-                // Generate a unique user id
-                if (self::$database->createRow($userID)[0]) {
+                // Create user ID
+                $userID = bin2hex($name);
+                // Try inserting a row
+                if (self::$database->insertEntry($userID)[0]) {
                     // Generate salt and hash
                     $salt = Utility::random(self::$configuration->lengths->salt);
-                    $hash = Utility::hash($password . $salt);
+                    $hash = hash("sha256", $password . $salt);
+                    $time = strval(0);
                     // Set user information
-                    self::$database->set($userID, self::COLUMN_SALT, $salt);
-                    self::$database->set($userID, self::COLUMN_HASH, $hash);
-                    self::$database->set($userID, self::COLUMN_LOCK, strval(0));
+                    self::$database->insertValue($userID, self::COLUMN_SALT, $salt);
+                    self::$database->insertValue($userID, self::COLUMN_HASH, $hash);
+                    self::$database->insertValue($userID, self::COLUMN_LOCK, $time);
                     // Return a success result
                     return [true, $userID];
                 }
                 // Fallback result
-                return [false, "User creation error"];
+                return [false, "User already exists"];
             }
             // Fallback result
             return [false, "Password too short"];
         }
         // Fallback result
-        return [false, "User already exists"];
+        return [false, "Name too short"];
     }
 
     /**
@@ -161,133 +140,40 @@ class Authenticate
      */
     public static function signIn($name, $password)
     {
-        // Check if the user exists
+        // Create user ID
         $userID = bin2hex($name);
-        if (self::$database->hasRow($userID)[0]) {
-            // Retrieve the lock value
-            $lock = self::$database->get($userID, self::COLUMN_LOCK);
-            if ($lock[0]) {
+        // Check if the user exists
+        if (self::$database->checkEntry($userID)[0]) {
+            // Fetch database values
+            $lock = self::$database->fetchValue($userID, self::COLUMN_LOCK);
+            $salt = self::$database->fetchValue($userID, self::COLUMN_SALT);
+            $hash = self::$database->fetchValue($userID, self::COLUMN_HASH);
+            // Validate answers
+            if ($lock[0] && $salt[0] && $hash[0]) {
                 // Verify that the user isn't locked
                 if (intval($lock[1]) < time()) {
-                    // Retrieve the salt and hash
-                    $salt = self::$database->get($userID, self::COLUMN_SALT);
-                    if ($salt[0]) {
-                        $hash = self::$database->get($userID, self::COLUMN_HASH);
-                        if ($hash[0]) {
-                            // Check password match
-                            if (Utility::hash($password . $salt[1]) === $hash[1]) {
-                                // Correct credentials
-                                if (self::TOKENS) {
-                                    // Create a combined permissions list
-                                    $permissions = self::$configuration->permissions->issuing;
-                                    // Issue a new token
-                                    return self::$authority->issue($userID, $permissions);
-                                } else {
-                                    // Create a new session
-                                    return self::$database->createLink($userID, Utility::random(self::$configuration->lengths->session));
-                                }
-                            } else {
-                                // Lock the user
-                                self::$database->set($userID, self::COLUMN_LOCK, strval(time() + self::$configuration->locks->timeout));
-                                // Return a failure result
-                                return [false, "Wrong password"];
-                            }
-                        }
-                        // Fallback result
-                        return $hash;
+                    // Check password match
+                    if (hash("sha256", $password . $salt[1]) === $hash[1]) {
+                        // Create a combined permissions list
+                        $permissions = self::$configuration->permissions->issuing;
+                        // Issue a new token
+                        return self::$authority->issue($userID, $permissions);
+                    } else {
+                        // Calculate new lock time
+                        $time = strval(time() + 10);
+                        // Lock the user
+                        self::$database->insertValue($userID, self::COLUMN_LOCK, $time);
+                        // Return a failure result
+                        return [false, "Wrong password"];
                     }
-                    // Fallback result
-                    return $salt;
                 }
                 // Fallback result
                 return [false, "User is locked"];
             }
             // Fallback result
-            return $lock;
+            return [false, "User is invalid"];
         }
         // Fallback result
         return [false, "User does not exist"];
-    }
-}
-
-/**
- * Authenticate API for notification delivery.
- */
-class Manager
-{
-    // API string
-    public const API = "manager";
-
-    // Column names
-    private const COLUMN_MESSAGES = "messages";
-
-    // Base APIs
-    private static Database $database;
-
-    /**
-     * API initializer.
-     */
-    public static function initialize()
-    {
-        // Initialize database
-        self::$database = new Database(self::API);
-        self::$database->createColumn(self::COLUMN_MESSAGES);
-    }
-
-    /**
-     * Pushes a new message to the user.
-     * @param string $id User ID
-     * @param string $title Title
-     * @param string $message Message
-     * @return array Results
-     */
-    public static function push($id, $title = null, $message = null)
-    {
-        // Make sure the ID exists
-        if (!self::$database->hasRow($id)[0]) {
-            self::$database->createRow($id);
-        }
-        // Initialize messages array
-        $messages = array();
-        // Check the database
-        if (self::$database->isset($id, self::COLUMN_MESSAGES)[0]) {
-            $messages = json_decode(self::$database->get($id, self::COLUMN_MESSAGES)[1]);
-        }
-        // Create a new message object
-        $messageObject = new stdClass();
-        $messageObject->title = $title;
-        $messageObject->message = $message;
-        $messageObject->timestamp = time();
-        // Push into array
-        array_push($messages, $messageObject);
-        // Set the messages array
-        return self::$database->set($id, self::COLUMN_MESSAGES, json_encode($messages));
-    }
-
-    /**
-     * Pulls the messages to the user.
-     * @param string $id User ID
-     * @return array Results
-     */
-    public static function pull($id)
-    {
-        // Make sure the ID exists
-        if (!self::$database->hasRow($id)[0]) {
-            self::$database->createRow($id);
-        }
-        // Initialize messages array
-        $messages = array();
-        // Check the database
-        if (self::$database->isset($id, self::COLUMN_MESSAGES)[0]) {
-            $messages = json_decode(self::$database->get($id, self::COLUMN_MESSAGES)[1]);
-        }
-        // Clear the messages array
-        $set = self::$database->set($id, self::COLUMN_MESSAGES, json_encode(array()));
-        // Check the result
-        if ($set[0]) {
-            return [true, $messages];
-        }
-        // Fallback error
-        return $set;
     }
 }

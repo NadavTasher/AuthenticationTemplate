@@ -1,5 +1,6 @@
 {
   "salt": 512,
   "session": 512,
+  "name": 2,
   "password": 8
 }

@@ -71,10 +71,6 @@ class Utility
     // Directory delimiter
     private const DIRECTORY_DELIMITER = ":";
 
-    // Hashing properties
-    private const HASHING_ROUNDS = 16;
-    private const HASHING_ALGORITHM = "sha256";
-
     /**
      * Returns a writable path for a name.
      * @param string $name Path name
@@ -144,35 +140,6 @@ class Utility
         }
         return "";
     }
-
-    /**
-     * Hashes a message.
-     * @param string $message Message
-     * @param int $rounds Number of rounds
-     * @return string Hash
-     */
-    public static function hash($message, $rounds = self::HASHING_ROUNDS)
-    {
-        if ($rounds === 0) {
-            return hash(self::HASHING_ALGORITHM, $message);
-        }
-        return hash(self::HASHING_ALGORITHM, self::hash($message, $rounds - 1));
-    }
-
-    /**
-     * Signs a message.
-     * @param string $message Message
-     * @param string $secret Shared secret
-     * @param int $rounds Number of rounds
-     * @return string Signature
-     */
-    public static function sign($message, $secret, $rounds = self::HASHING_ROUNDS)
-    {
-        if ($rounds === 0) {
-            return hash_hmac(self::HASHING_ALGORITHM, $message, $secret);
-        }
-        return hash_hmac(self::HASHING_ALGORITHM, self::sign($message, $secret, $rounds - 1), $secret);
-    }
 }
 
 /**
@@ -184,7 +151,6 @@ class Database
     public const API = "database";
 
     private const LENGTH = 32;
-    private const SEPARATOR = "\n";
 
     // Guest API
     private string $API;
@@ -199,296 +165,178 @@ class Database
     }
 
     /**
-     * Creates a new database row.
-     * @param null $id ID
+     * Inserts a new database entry.
+     * @param null $entry Entry ID
      * @return array Result
      */
-    public function createRow($id = null)
+    public function insertEntry($entry = null)
     {
         // Generate a row ID
-        if ($id === null) {
-            $id = Utility::random(self::LENGTH);
+        if ($entry === null) {
+            $entry = Utility::random(self::LENGTH);
         }
-        // Check if the row already exists
-        $has_row = $this->hasRow($id);
-        if (!$has_row[0]) {
-            // Create row directory
-            mkdir(Utility::evaluateFile("rows:$id", self::API, $this->API));
-            // Return result
-            return [true, $id];
+        // Check existence
+        $entryCheck = $this->checkEntry($entry);
+        // Make sure the entry does not exist
+        if (!$entryCheck[0]) {
+            // Extract the path
+            $entryPath = Utility::evaluateFile("$entry", self::API, $this->API);
+            // Create the path
+            mkdir($entryPath);
+            // Return success
+            return [true, $entry];
         }
-        return [false, "Row already exists"];
+        // Fallback result
+        return [false, null];
     }
 
     /**
-     * Creates a new database column.
-     * @param string $name Column name
+     * Check whether a database entry exists.
+     * @param string $entry Row ID
      * @return array Result
      */
-    public function createColumn($name)
+    public function checkEntry($entry)
     {
-        // Generate hashed string
-        $hashed = Utility::hash($name);
-        // Check if the column already exists
-        $has_column = $this->hasColumn($name);
-        if (!$has_column[0]) {
-            // Create column directory
-            mkdir(Utility::evaluateFile("columns:$hashed", self::API, $this->API));
-            // Return result
-            return [true, $name];
+        // Create the path
+        $entryPath = Utility::evaluateFile("$entry", self::API, $this->API);
+        // Check existence
+        if (file_exists($entryPath) && is_dir($entryPath)) {
+            // Return success
+            return [true, null];
         }
-        return [false, "Column already exists"];
+        // Fallback result
+        return [false, null];
     }
 
     /**
-     * Creates a new database link.
-     * @param string $row Row ID
-     * @param string $link Link value
-     * @return array Result
+     * Removes a database entry.
+     * @param string $entry Entry ID
+     * @return array Results
      */
-    public function createLink($row, $link)
+    public function removeEntry($entry)
     {
-        // Generate hashed string
-        $hashed = Utility::hash($link);
-        // Check if the link already exists
-        $has_link = $this->hasLink($link);
-        if (!$has_link[0]) {
-            // Make sure the row exists
-            $has_row = $this->hasRow($row);
-            if ($has_row[0]) {
-                // Generate link file
-                file_put_contents(Utility::evaluateFile("links:$hashed", self::API, $this->API), $row);
-                // Return result
-                return [true, $link];
+        // Check existence
+        $entryCheck = $this->checkEntry($entry);
+        // Make sure the entry exists
+        if ($entryCheck[0]) {
+            // Create entry path
+            $entryPath = Utility::evaluateFile("$entry", self::API, $this->API);
+            // Scan entry directory
+            $values = array_slice(scandir($entryPath), 2);
+            // Loop over set columns
+            foreach ($values as $value) {
+                // Unset value
+                unlink(Utility::evaluatePath($value, $entryPath));
             }
-            return $has_row;
+            // Remove the path
+            rmdir($entryPath);
+            // Return success
+            return [true, null];
         }
-        return [false, "Link already exists"];
-    }
-
-    /**
-     * Check whether a database row exists.
-     * @param string $id Row ID
-     * @return array Result
-     */
-    public function hasRow($id)
-    {
-        // Store path
-        $path = Utility::evaluateFile("rows:$id", self::API, $this->API);
-        // Check if path exists and is a directory
-        if (file_exists($path) && is_dir($path)) {
-            return [true, $id];
-        }
-        return [false, "Row doesn't exist"];
-    }
-
-    /**
-     * Check whether a database column exists.
-     * @param string $name Column name
-     * @return array Result
-     */
-    public function hasColumn($name)
-    {
-        // Generate hashed string
-        $hashed = Utility::hash($name);
-        // Store path
-        $path = Utility::evaluateFile("columns:$hashed", self::API, $this->API);
-        // Check if path exists and is a directory
-        if (file_exists($path) && is_dir($path)) {
-            return [true, $name];
-        }
-        return [false, "Column doesn't exist"];
-    }
-
-    /**
-     * Check whether a database link exists.
-     * @param string $link Link value
-     * @return array Result
-     */
-    public function hasLink($link)
-    {
-        // Generate hashed string
-        $hashed = Utility::hash($link);
-        // Store path
-        $path = Utility::evaluateFile("links:$hashed", self::API, $this->API);
-        // Check if path exists and is a file
-        if (file_exists($path) && is_file($path)) {
-            // Read link
-            return [true, file_get_contents($path)];
-        }
-        return [false, "Link doesn't exist"];
-    }
-
-    /**
-     * Check whether a database value exists.
-     * @param string $row Row ID
-     * @param string $column Column name
-     * @return array Result
-     */
-    public function isset($row, $column)
-    {
-        // Check if row exists
-        $has_row = $this->hasRow($row);
-        if ($has_row[0]) {
-            // Check if the column exists
-            $has_column = $this->hasColumn($column);
-            if ($has_column[0]) {
-                // Generate hashed string
-                $hashed_name = Utility::hash($column);
-                // Store path
-                $path = Utility::evaluateFile("rows:$row:$hashed_name", self::API, $this->API);
-                // Check if path exists and is a file
-                if (file_exists($path) && is_file($path)) {
-                    return [true, null];
-                }
-                return [false, "Value doesn't exist"];
-            }
-            return $has_column;
-        }
-        return $has_row;
+        // Fallback result
+        return [false, null];
     }
 
     /**
      * Sets a database value.
-     * @param string $row Row ID
-     * @param string $column Column name
+     * @param string $entry Entry ID
+     * @param string $key Key
      * @param string $value Value
      * @return array Result
      */
-    public function set($row, $column, $value)
+    public function insertValue($entry, $key, $value)
     {
-        // Remove previous values
-        if ($this->isset($row, $column)[0]) {
-            $this->unset($row, $column);
-        }
-        // Check if the column exists
-        $has_column = $this->hasColumn($column);
-        if ($has_column[0]) {
-            // Create hashed string
-            $hashed_name = Utility::hash($column);
-            // Store path
-            $value_path = Utility::evaluateFile("rows:$row:$hashed_name", self::API, $this->API);
-            // Create hashed string
-            $hashed_value = Utility::hash($value);
-            // Write path
-            file_put_contents($value_path, $value);
-            // Store new path
-            $index_path = Utility::evaluateFile("columns:$hashed_name:$hashed_value", self::API, $this->API);
-            // Create rows array
-            $rows = array();
-            // Make sure the index file exists
-            if (file_exists($index_path) && is_file($index_path)) {
-                // Read contents
-                $contents = file_get_contents($index_path);
-                // Separate lines
-                $rows = explode(self::SEPARATOR, $contents);
-            }
-            // Insert row to rows
-            array_push($rows, $row);
-            // Write contents
-            file_put_contents($index_path, implode(self::SEPARATOR, $rows));
-            // Result result
+        // Check existence
+        $entryCheck = $this->checkEntry($entry);
+        // Make sure the entry exists
+        if ($entryCheck[0]) {
+            // Extract entry path
+            $valuePath = Utility::evaluateFile("$entry:$key", self::API, $this->API);
+            // Write value
+            file_put_contents($valuePath, $value);
+            // Return success
             return [true, null];
         }
-        return $has_column;
+        // Fallback result
+        return [false, null];
     }
 
     /**
-     * Unsets a database value.
-     * @param string $row Row ID
-     * @param string $column Column name
+     * Fetches a database value.
+     * @param string $entry Entry ID
+     * @param string $key Key
      * @return array Result
      */
-    public function unset($row, $column)
+    public function fetchValue($entry, $key)
     {
-        // Check if a value is already set
-        $isset = $this->isset($row, $column);
-        if ($isset[0]) {
-            // Check if the column exists
-            $has_column = $this->hasColumn($column);
-            if ($has_column[0]) {
-                // Create hashed string
-                $hashed_name = Utility::hash($column);
-                // Store path
-                $value_path = Utility::evaluateFile("rows:$row:$hashed_name", self::API, $this->API);
-                // Get value & Hash it
-                $value = file_get_contents($value_path);
-                // Create hashed value
-                $hashed_value = Utility::hash($value);
-                // Remove path
-                unlink($value_path);
-                // Store new path
-                $index_path = Utility::evaluateFile("columns:$hashed_name:$hashed_value", self::API, $this->API);
-                // Make sure the index file exists
-                if (file_exists($index_path) && is_file($index_path)) {
-                    // Read contents
-                    $contents = file_get_contents($index_path);
-                    // Separate lines
-                    $rows = explode(self::SEPARATOR, $contents);
-                    // Remove row from rows
-                    unset($rows[array_search($row, $rows)]);
-                    // Write contents
-                    file_put_contents($index_path, implode(self::SEPARATOR, $rows));
-                    // Return result
-                    return [true, null];
-                }
-                return [false, "Index doesn't exist"];
+        // Check existence
+        $entryCheck = $this->checkEntry($entry);
+        // Make sure the entry exists
+        if ($entryCheck[0]) {
+            // Create value path
+            $valuePath = Utility::evaluateFile("$entry:$key", self::API, $this->API);
+            // Make sure the value path exists
+            if (file_exists($valuePath) && is_file($valuePath)) {
+                // Return success
+                return [true, file_get_contents($valuePath)];
             }
-            return $has_column;
         }
-        return $isset;
+        // Fallback result
+        return [false, null];
     }
 
     /**
-     * Gets a database value.
-     * @param string $row Row ID
-     * @param string $column Column name
+     * Removes a database value.
+     * @param string $entry Entry ID
+     * @param string $key Key
      * @return array Result
      */
-    public function get($row, $column)
+    public function removeValue($entry, $key)
     {
-        // Check if a value is set
-        $isset = $this->isset($row, $column);
-        if ($isset[0]) {
-            // Generate hashed string
-            $hashed_name = Utility::hash($column);
-            // Store path
-            $path = Utility::evaluateFile("rows:$row:$hashed_name", self::API, $this->API);
-            // Read path
-            return [true, file_get_contents($path)];
+        // Check existence
+        $rowCheck = $this->checkEntry($entry);
+        // Make sure the entry exists
+        if ($rowCheck[0]) {
+            // Create value path
+            $valuePath = Utility::evaluateFile("$entry:$key", self::API, $this->API);
+            // Make sure the value path exists
+            if (file_exists($valuePath) && is_file($valuePath)) {
+                // Remove value
+                unlink($valuePath);
+                // Return success
+                return [true, null];
+            }
         }
-        return $isset;
+        // Fallback result
+        return [false, null];
     }
 
     /**
-     * Searches rows by column values.
-     * @param string $column Column name
+     * Searches for entries by values.
+     * @param string $key Key
      * @param string $value Value
-     * @return array Matching rows
+     * @return array Results
      */
-    public function search($column, $value)
+    public function searchEntry($key, $value)
     {
-        // Create rows array
-        $rows = array();
-        // Check if the column exists
-        $has_column = $this->hasColumn($column);
-        if ($has_column[0]) {
-            // Create hashed string
-            $hashed_name = Utility::hash($column);
-            // Create hashed string
-            $hashed_value = Utility::hash($value);
-            // Store new path
-            $index_path = Utility::evaluateFile("columns:$hashed_name:$hashed_value", self::API, $this->API);
-            // Make sure the index file exists
-            if (file_exists($index_path) && is_file($index_path)) {
-                // Read contents
-                $contents = file_get_contents($index_path);
-                // Separate lines
-                $rows = explode(self::SEPARATOR, $contents);
+        // Initialize the results array
+        $array = array();
+        // List rows
+        $entries = scandir(Utility::evaluateFile("", self::API, $this->API));
+        $entries = array_slice($entries, 2);
+        // Loop through
+        foreach ($entries as $entry) {
+            // Check value match
+            $fetch = $this->fetchValue($entry, $key);
+            // Make sure fetch was successful
+            if ($fetch[0]) {
+                if ($value === $fetch[1]) {
+                    array_push($array, $entry);
+                }
             }
-            return [true, $rows];
         }
-        return $has_column;
+        // Return success
+        return [true, $array];
     }
 }
 
@@ -501,14 +349,11 @@ class Authority
     public const API = "authority";
 
     private const LENGTH = 512;
-    private const SEPARATOR = ":";
     private const VALIDITY = 31 * 24 * 60 * 60;
+    private const SEPARATOR = ":";
 
     // Guest API
     private string $API;
-
-    // Secret string
-    private string $secret;
 
     /**
      * Authority constructor.
@@ -518,14 +363,12 @@ class Authority
     {
         $this->API = $API;
         // Create secret
-        $path = Utility::evaluateFile("secret.key", self::API, $this->API);
+        $keyPath = Utility::evaluateFile($this->API, self::API);
         // Check existence
-        if (!file_exists($path)) {
+        if (!(file_exists($keyPath) && is_file($keyPath))) {
             // Create the secret file
-            file_put_contents($path, Utility::random(self::LENGTH));
+            file_put_contents($keyPath, Utility::random(self::LENGTH));
         }
-        // Read secret
-        $this->secret = file_get_contents($path);
     }
 
     /**
@@ -538,19 +381,18 @@ class Authority
     public function issue($contents, $permissions = [], $validity = self::VALIDITY)
     {
         // Create token object
-        $token_object = new stdClass();
-        $token_object->contents = $contents;
-        $token_object->permissions = $permissions;
-        $token_object->issuer = Utility::hash($this->API);
-        $token_object->expiry = time() + intval($validity);
+        $tokenObject = new stdClass();
+        $tokenObject->contents = $contents;
+        $tokenObject->permissions = $permissions;
+        $tokenObject->expiry = time() + intval($validity);
         // Create token string
-        $token_object_string = bin2hex(json_encode($token_object));
+        $tokenString = bin2hex(json_encode($tokenObject));
         // Calculate signature
-        $token_signature = Utility::sign($token_object_string, $this->secret);
+        $tokenSignature = hash_hmac("sha256", $tokenString, file_get_contents(Utility::evaluateFile($this->API, self::API)));
         // Create parts
-        $token_parts = [$token_object_string, $token_signature];
+        $tokenSlices = [$tokenString, $tokenSignature];
         // Combine all into token
-        $token = implode(self::SEPARATOR, $token_parts);
+        $token = implode(self::SEPARATOR, $tokenSlices);
         // Return combined message
         return [true, $token];
     }
@@ -563,40 +405,36 @@ class Authority
      */
     public function validate($token, $permissions = [])
     {
-        // Try parsing
         // Separate string
-        $token_parts = explode(self::SEPARATOR, $token);
+        $tokenSlices = explode(self::SEPARATOR, $token);
         // Validate content count
-        if (count($token_parts) === 2) {
+        if (count($tokenSlices) === 2) {
             // Store parts
-            $token_object_string = $token_parts[0];
-            $token_signature = $token_parts[1];
+            $tokenString = $tokenSlices[0];
+            $tokenSignature = $tokenSlices[1];
             // Validate signature
-            if (Utility::sign($token_object_string, $this->secret) === $token_signature) {
+            if (hash_hmac("sha256", $tokenString, file_get_contents(Utility::evaluateFile($this->API, self::API))) === $tokenSignature) {
                 // Parse token object
-                $token_object = json_decode(hex2bin($token_object_string));
+                $tokenObject = json_decode(hex2bin($tokenString));
                 // Validate existence
-                if (isset($token_object->contents) && isset($token_object->permissions) && isset($token_object->issuer) && isset($token_object->expiry)) {
-                    // Validate issuer
-                    if ($token_object->issuer === Utility::hash($this->API)) {
-                        // Validate expiry
-                        if (time() < $token_object->expiry) {
-                            // Validate permissions
-                            foreach ($permissions as $permission) {
-                                // Make sure permission exists
-                                if (array_search($permission, $token_object->permissions) === false) {
-                                    // Fallback error
-                                    return [false, "Insufficient token permissions"];
-                                }
+                if (isset($tokenObject->contents) &&
+                    isset($tokenObject->permissions) &&
+                    isset($tokenObject->expiry)) {
+                    // Validate expiry
+                    if (time() < $tokenObject->expiry) {
+                        // Validate permissions
+                        foreach ($permissions as $permission) {
+                            // Make sure permission exists
+                            if (array_search($permission, $tokenObject->permissions) === false) {
+                                // Fallback error
+                                return [false, "Insufficient token permissions"];
                             }
-                            // Return token
-                            return [true, $token_object->contents];
                         }
-                        // Fallback error
-                        return [false, "Invalid token expiry"];
+                        // Return token
+                        return [true, $tokenObject->contents];
                     }
                     // Fallback error
-                    return [false, "Invalid token issuer"];
+                    return [false, "Invalid token expiry"];
                 }
                 // Fallback error
                 return [false, "Invalid token structure"];
