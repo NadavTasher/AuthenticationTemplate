@@ -128,11 +128,4 @@ class Authenticate {
         }
     }
 
-    /**
-     * Returns the authentication token.
-     */
-    static getToken() {
-        return this.token;
-    }
-
 }
