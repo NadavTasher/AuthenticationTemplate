@@ -399,7 +399,7 @@ class Authority
 
     /**
      * Validates a token.
-     * @param string $token Token
+     * @param string $token token
      * @param array $permissions Permissions
      * @return array Validation result
      */

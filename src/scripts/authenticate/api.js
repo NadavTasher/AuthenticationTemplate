@@ -3,7 +3,6 @@
  * https://github.com/NadavTasher/AuthenticationTemplate/
  **/
 
-const PULL_API = "pull";
 const AUTHENTICATE_API = "authenticate";
 
 /**
@@ -127,6 +126,13 @@ class Authenticate {
             // Clear the text color
             output.style.removeProperty("color");
         }
+    }
+
+    /**
+     * Returns the authentication token.
+     */
+    static getToken() {
+        return this.token;
     }
 
 }

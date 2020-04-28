@@ -85,7 +85,7 @@ class Authenticate
 
     /**
      * Authenticate a user.
-     * @param string $token Token
+     * @param string $token token
      * @return array Results
      */
     public static function validate($token)
