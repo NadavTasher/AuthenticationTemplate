@@ -30,20 +30,18 @@ class Authenticate {
             // Send the API call
             API.call(AUTHENTICATE_API, "validate", {
                 token: this.token
-            }, (status, result) => {
-                if (status) {
-                    // Change the page
-                    UI.page("authenticated");
-                    // Run the callback
-                    if (callback !== null) {
-                        callback();
-                    }
-                } else {
-                    // Show the inputs
-                    UI.show("authenticate-inputs");
-                    // Change the output message
-                    this.output(result, true);
+            }).then(result => {
+                // Change the page
+                UI.page("authenticated");
+                // Run the callback
+                if (callback !== null) {
+                    callback();
                 }
+            }).catch(result => {
+                // Show the inputs
+                UI.show("authenticate-inputs");
+                // Change the output message
+                this.output(result, true);
             });
         }
     }
@@ -60,16 +58,14 @@ class Authenticate {
         API.call(AUTHENTICATE_API, "signUp", {
             name: UI.find("authenticate-name").value,
             password: UI.find("authenticate-password").value
-        }, (status, result) => {
-            if (status) {
-                // Call the signin function
-                this.signIn(callback);
-            } else {
-                // Show the inputs
-                UI.show("authenticate-inputs");
-                // Change the output message
-                this.output(result, true);
-            }
+        }).then(result => {
+            // Call the signin function
+            this.signIn(callback);
+        }).catch(result => {
+            // Show the inputs
+            UI.show("authenticate-inputs");
+            // Change the output message
+            this.output(result, true);
         });
     }
 
@@ -85,18 +81,16 @@ class Authenticate {
         API.call(AUTHENTICATE_API, "signIn", {
             name: UI.find("authenticate-name").value,
             password: UI.find("authenticate-password").value
-        }, (status, result) => {
-            if (status) {
-                // Push the token
-                localStorage.setItem(AUTHENTICATE_API, this.token = result);
-                // Call the initialize function
-                this.initialize(callback);
-            } else {
-                // Show the inputs
-                UI.show("authenticate-inputs");
-                // Change the output message
-                this.output(result, true);
-            }
+        }).then(result => {
+            // Push the token
+            localStorage.setItem(AUTHENTICATE_API, this.token = result);
+            // Call the initialize function
+            this.initialize(callback);
+        }).catch(result => {
+            // Show the inputs
+            UI.show("authenticate-inputs");
+            // Change the output message
+            this.output(result, true);
         });
     }
 
