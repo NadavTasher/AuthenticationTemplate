@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "validate": true,
+    "signIn": true,
+    "signUp": true
+  },
+  "lengths": {
+    "salt": 512,
+    "name": 2,
+    "password": 8
+  }
+}

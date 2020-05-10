@@ -34,9 +34,7 @@ class Authenticate
     public static function initialize()
     {
         // Load configuration
-        self::$configuration = new stdClass();
-        self::$configuration->hooks = json_decode(file_get_contents(Utility::evaluateFile("hooks.json", self::API)));
-        self::$configuration->lengths = json_decode(file_get_contents(Utility::evaluateFile("lengths.json", self::API)));
+        self::$configuration = json_decode(file_get_contents(Utility::evaluateFile("configuration.json", self::API)));
         // Make sure the database is initiated.
         self::$database = new Database(self::API);
         // Make sure the authority is set-up
