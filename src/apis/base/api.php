@@ -373,17 +373,15 @@ class Authority
 
     /**
      * Creates a token.
-     * @param string | stdClass | array $contents Content
-     * @param array $permissions Permissions
+     * @param string | stdClass | array $data Data
      * @param float | int $validity Validity time
      * @return array Result
      */
-    public function issue($contents, $permissions = [], $validity = self::VALIDITY)
+    public function issue($data, $validity = self::VALIDITY)
     {
         // Create token object
         $tokenObject = new stdClass();
-        $tokenObject->contents = $contents;
-        $tokenObject->permissions = $permissions;
+        $tokenObject->data = $data;
         $tokenObject->expiry = time() + intval($validity);
         // Create token string
         $tokenString = bin2hex(json_encode($tokenObject));
@@ -399,11 +397,10 @@ class Authority
 
     /**
      * Validates a token.
-     * @param string $token token
-     * @param array $permissions Permissions
+     * @param string $token Token
      * @return array Validation result
      */
-    public function validate($token, $permissions = [])
+    public function validate($token)
     {
         // Separate string
         $tokenSlices = explode(self::SEPARATOR, $token);
@@ -417,21 +414,12 @@ class Authority
                 // Parse token object
                 $tokenObject = json_decode(hex2bin($tokenString));
                 // Validate existence
-                if (isset($tokenObject->contents) &&
-                    isset($tokenObject->permissions) &&
+                if (isset($tokenObject->data) &&
                     isset($tokenObject->expiry)) {
                     // Validate expiry
                     if (time() < $tokenObject->expiry) {
-                        // Validate permissions
-                        foreach ($permissions as $permission) {
-                            // Make sure permission exists
-                            if (array_search($permission, $tokenObject->permissions) === false) {
-                                // Fallback error
-                                return [false, "Insufficient token permissions"];
-                            }
-                        }
                         // Return token
-                        return [true, $tokenObject->contents];
+                        return [true, $tokenObject->data];
                     }
                     // Fallback error
                     return [false, "Invalid token expiry"];

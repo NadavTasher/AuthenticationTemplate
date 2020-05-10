@@ -37,7 +37,6 @@ class Authenticate
         self::$configuration = new stdClass();
         self::$configuration->hooks = json_decode(file_get_contents(Utility::evaluateFile("hooks.json", self::API)));
         self::$configuration->lengths = json_decode(file_get_contents(Utility::evaluateFile("lengths.json", self::API)));
-        self::$configuration->permissions = json_decode(file_get_contents(Utility::evaluateFile("permissions.json", self::API)));
         // Make sure the database is initiated.
         self::$database = new Database(self::API);
         // Make sure the authority is set-up
@@ -90,10 +89,8 @@ class Authenticate
      */
     public static function validate($token)
     {
-        // Create a combined permissions list
-        $permissions = self::$configuration->permissions->validating;
         // Authenticate the user using tokens
-        return self::$authority->validate($token, $permissions);
+        return self::$authority->validate($token);
     }
 
     /**
@@ -154,10 +151,8 @@ class Authenticate
                 if (intval($lock[1]) < time()) {
                     // Check password match
                     if (hash("sha256", $password . $salt[1]) === $hash[1]) {
-                        // Create a combined permissions list
-                        $permissions = self::$configuration->permissions->issuing;
                         // Issue a new token
-                        return self::$authority->issue($userID, $permissions);
+                        return self::$authority->issue($userID);
                     } else {
                         // Calculate new lock time
                         $time = strval(time() + 10);
