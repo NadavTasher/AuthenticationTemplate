@@ -43,7 +43,6 @@ p, button, input, select, div, body, html {
     outline: none;
 }
 
-
 p, button, input, select {
     /* Positioning */
     margin: 1vh;
@@ -100,10 +99,6 @@ button:hover, input:hover, select:hover, textarea:hover {
 [row = ""] > *, [row = true] > * {
     /* Width */
     width: 100%;
-}
-
-[hidden = ""], [hidden = true] {
-    display: none !important;
 }
 
 *::-webkit-scrollbar {
