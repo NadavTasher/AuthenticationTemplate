@@ -101,7 +101,7 @@ button:hover, input:hover, select:hover, textarea:hover {
     width: 100%;
 }
 
-[hidden] {
+[hidden = ""], [hidden = true] {
     display: none !important;
 }
 

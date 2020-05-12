@@ -97,7 +97,7 @@ class UI {
      */
     static hide(v) {
         // Set style to none
-        this.find(v).hidden = true;
+        this.find(v).setAttribute("hidden", "true");
     }
 
     /**
@@ -106,7 +106,7 @@ class UI {
      */
     static show(v) {
         // Set style to original value
-        this.find(v).hidden = false;
+        this.find(v).removeAttribute("hidden");
     }
 
     /**
