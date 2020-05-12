@@ -5,8 +5,7 @@
  * https://github.com/NadavTasher/AuthenticationTemplate/
  **/
 
-// Include Base API
-include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base" . DIRECTORY_SEPARATOR . "api.php";
+include_once __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "base" . DIRECTORY_SEPARATOR . "Base.php";
 
 /**
  * Authenticate API for user initialize.
@@ -34,7 +33,7 @@ class Authenticate
     public static function initialize()
     {
         // Load configuration
-        self::$configuration = json_decode(file_get_contents(Utility::evaluateFile("configuration.json", self::API)));
+        self::$configuration = json_decode(file_get_contents(Base::file("configuration.json", self::API)));
         // Make sure the database is initiated.
         self::$database = new Database(self::API);
         // Make sure the authority is set-up
@@ -107,7 +106,7 @@ class Authenticate
                 // Try inserting a row
                 if (self::$database->insertEntry($userID)[0]) {
                     // Generate salt and hash
-                    $salt = Utility::random(self::$configuration->lengths->salt);
+                    $salt = Base::random(self::$configuration->lengths->salt);
                     $hash = hash("sha256", $password . $salt);
                     $time = strval(0);
                     // Set user information

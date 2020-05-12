@@ -28,14 +28,15 @@
     <link rel="stylesheet" href="stylesheets/theme.css"/>
     <!-- Scripts -->
     <script type="text/javascript" src="scripts/app.js"></script>
-    <script type="text/javascript" src="scripts/base/api.js"></script>
-    <script type="text/javascript" src="scripts/authenticate/api.js"></script>
+    <script type="text/javascript" src="scripts/base/API.js"></script>
+    <script type="text/javascript" src="scripts/base/UI.js"></script>
+    <script type="text/javascript" src="scripts/authenticate/API.js"></script>
     <!-- App Title -->
     <title>AppName</title>
     <!-- No Script -->
     <noscript></noscript>
 </head>
-<body onload="window.prepare(()=>Authenticate.initialize(load))" column>
+<body onload="Authenticate.initialize(load)" column>
 <div id="authenticate" column>
     <p style="font-size: 5vh;">Welcome to AppName</p>
     <p style="font-size: 3vh;" id="authenticate-output">Please authenticate to continue.</p>
