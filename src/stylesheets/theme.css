@@ -101,6 +101,10 @@ button:hover, input:hover, select:hover, textarea:hover {
     width: 100%;
 }
 
+[hidden] {
+    display: none !important;
+}
+
 *::-webkit-scrollbar {
     display: none;
 }
