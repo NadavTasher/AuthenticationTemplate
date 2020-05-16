@@ -34,6 +34,41 @@
     <title>AppName</title>
     <!-- No Script -->
     <noscript></noscript>
+    <!-- Templates -->
+    <template id="information">
+        <div id="popup-information-${id}" style="background-color: #33333380; top: 0; bottom: 0; left: 0; right: 0; position: fixed;" row>
+            <div style="max-width: 50vw;" column>
+                <div style="background-color: var(--bright); border-radius: 1vh;" column>
+                    <p style="font-size: larger; justify-content: flex-start;">${title}</p>
+                    <p style="font-size: large;">${message}</p>
+                    <div row>
+                        <button id="popup-information-${id}-close">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+    <template id="input">
+        <div id="popup-input-${id}" style="background-color: #33333380; top: 0; bottom: 0; left: 0; right: 0; position: fixed;" row>
+            <div style="max-width: 50vw;" column>
+                <div style="background-color: var(--bright); border-radius: 1vh;" column>
+                    <p style="font-size: larger; justify-content: flex-start;">${title}</p>
+                    <input id="popup-input-${id}-input" type="text" placeholder="${message}"/>
+                    <div row>
+                        <button id="popup-input-${id}-cancel">Cancel</button>
+                        <button id="popup-input-${id}-finish">Finish</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+    <template id="toast">
+        <div id="popup-toast-${id}" style="margin: 1vh; height: 8vh; bottom: 0; left: 0; right: 0; position: fixed;" row>
+            <div style="background-color: var(--bright); border-radius: 1vh;" column>
+                <p style="font-size: large; margin: 0;">${message}</p>
+            </div>
+        </div>
+    </template>
 </head>
 <body onload="Authenticate.initialize(load)" column>
 <div id="authenticate" column>

@@ -110,6 +110,17 @@ class UI {
     }
 
     /**
+     * Removes a given view.
+     * @param v View
+     */
+    static remove(v) {
+        // Find view
+        let element = this.find(v);
+        // Remove
+        element.parentNode.removeChild(element);
+    }
+
+    /**
      * Shows a given view while hiding it's brothers.
      * @param v View
      */
@@ -184,5 +195,94 @@ class UI {
         created.innerHTML = html;
         // Return created element
         return created.content;
+    }
+}
+
+/**
+ * Base API for crafting popups.
+ */
+class Popup {
+
+    /**
+     * Pops up a simple information popup.
+     * @param title Title
+     * @param message Message
+     * @return Promise
+     */
+    static information(title, message) {
+        return new Promise(function (resolve, reject) {
+            // Generate a random ID
+            let id = Math.floor(Math.random() * 100000);
+            // Populate views
+            document.body.appendChild(UI.populate("information", {
+                id: id,
+                title: title,
+                message: message
+            }));
+            // Set click listener
+            UI.find("popup-information-" + id + "-close").addEventListener("click", function () {
+                // Close popup
+                UI.remove("popup-information-" + id);
+            });
+        });
+    }
+
+    /**
+     * Pops up a simple input popup.
+     * @param title Title
+     * @param message Message
+     * @return Promise
+     */
+    static input(title, message) {
+        return new Promise(function (resolve, reject) {
+            // Generate a random ID
+            let id = Math.floor(Math.random() * 100000);
+            // Populate views
+            document.body.appendChild(UI.populate("input", {
+                id: id,
+                title: title,
+                message: message
+            }));
+            // Set click listeners
+            UI.find("popup-input-" + id + "-cancel").addEventListener("click", function () {
+                // Close popup
+                UI.remove("popup-input-" + id);
+                // Reject promise
+                reject();
+
+            });
+            UI.find("popup-input-" + id + "-finish").addEventListener("click", function () {
+                // Read value
+                let value = UI.find("popup-input-" + id + "-input").value;
+                // Close popup
+                UI.remove("popup-input-" + id);
+                // Resolve promise
+                resolve(value);
+            });
+        });
+    }
+
+    /**
+     * Pops up a simple toast popup.
+     * @param message Message
+     * @return Promise
+     */
+    static toast(message) {
+        return new Promise(function (resolve, reject) {
+            // Generate a random ID
+            let id = Math.floor(Math.random() * 100000);
+            // Populate views
+            document.body.appendChild(UI.populate("toast", {
+                id: id,
+                message: message
+            }));
+            // Set timeout
+            setTimeout(function () {
+                // Close popup
+                UI.remove("popup-toast-" + id);
+                // Resolve the promise
+                resolve();
+            }, 3000);
+        });
     }
 }
