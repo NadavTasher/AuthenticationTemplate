@@ -114,7 +114,7 @@ class Database
             // Extract entry path
             $valuePath = Base::file("$entry:$key", self::API, $this->API);
             // Write value
-            file_put_contents($valuePath, $value);
+            file_put_contents($valuePath, json_encode($value));
             // Return success
             return [true, null];
         }
@@ -139,7 +139,7 @@ class Database
             // Make sure the value path exists
             if (file_exists($valuePath) && is_file($valuePath)) {
                 // Return success
-                return [true, file_get_contents($valuePath)];
+                return [true, json_decode(file_get_contents($valuePath))];
             }
         }
         // Fallback result
