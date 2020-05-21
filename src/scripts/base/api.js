@@ -223,6 +223,8 @@ class Popup {
             UI.find("popup-information-" + id + "-close").addEventListener("click", function () {
                 // Close popup
                 UI.remove("popup-information-" + id);
+                // Resolve promise
+                resolve();
             });
         });
     }
