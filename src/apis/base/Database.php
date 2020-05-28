@@ -102,7 +102,7 @@ class Database
      * Sets a database value.
      * @param string $entry Entry ID
      * @param string $key Key
-     * @param string $value Value
+     * @param string | array | stdClass $value Value
      * @return array Result
      */
     public function insertValue($entry, $key, $value)
