@@ -111,7 +111,9 @@ class Database
         $entryCheck = $this->checkEntry($entry);
         // Make sure the entry exists
         if ($entryCheck[0]) {
-            // Extract entry path
+            // Hex key
+            $key = bin2hex($key);
+            // Create value path
             $valuePath = Base::file("$entry:$key", self::API, $this->API);
             // Write value
             file_put_contents($valuePath, json_encode($value));
@@ -134,6 +136,8 @@ class Database
         $entryCheck = $this->checkEntry($entry);
         // Make sure the entry exists
         if ($entryCheck[0]) {
+            // Hex key
+            $key = bin2hex($key);
             // Create value path
             $valuePath = Base::file("$entry:$key", self::API, $this->API);
             // Make sure the value path exists
@@ -158,6 +162,8 @@ class Database
         $rowCheck = $this->checkEntry($entry);
         // Make sure the entry exists
         if ($rowCheck[0]) {
+            // Hex key
+            $key = bin2hex($key);
             // Create value path
             $valuePath = Base::file("$entry:$key", self::API, $this->API);
             // Make sure the value path exists
