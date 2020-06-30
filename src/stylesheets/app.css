@@ -4,8 +4,8 @@
  **/
 
 :root {
-    --bright: #DDDDEE;
-    --dark: #9999AA;
+    --light: #DDDDEE;
+    --dark: #BBBBCC;
     --theme: #FFFFFF;
     --text: black;
 }
